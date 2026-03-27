@@ -46,8 +46,9 @@ The system remains deployed on Render with Turso and Groq. The landing page is b
 - Bold headline using Montserrat 700: "Your business runs on manual processes. **It doesn't have to.**" (or similar — blue span on key phrase)
 - Sub-copy: 2-3 sentences explaining what 3D Visual Pro does
 - Stats bar: 3 key stats (e.g., "60s AI response time", "24/7 lead capture", "80% refund guarantee")
-- Two CTAs: "Talk to Our AI Assistant" (scrolls to chatbot / opens widget) + "See Our Services" (scrolls to services)
+- Two CTAs: "Talk to Our AI Assistant" (opens floating chatbot widget) + "See Our Services" (scrolls to services)
 - Guarantee badge: Prominently displayed — "80% Money-Back Guarantee on Setup Fee"
+- No hero form card -- the floating chatbot widget is the sole capture mechanism. The hero right column can use a visual/illustration or be omitted (single-column hero on all sizes).
 
 **2. Problem Section**
 - Section label: "The Problem"
@@ -104,7 +105,6 @@ The system remains deployed on Render with Turso and Groq. The landing page is b
 
 ### Responsiveness
 - Follow existing 3D Visual Pro responsive breakpoints (900px, 700px)
-- Hero form card hidden on mobile (< 900px)
 - Service/problem grids collapse to single column on mobile
 - Process table becomes cards on mobile (< 700px)
 - Chatbot widget works full-width on mobile
@@ -153,9 +153,16 @@ The system remains deployed on Render with Turso and Groq. The landing page is b
 3. Where do things tend to slow down? (AI identifies relevant service from response)
 4. Continues with the matched service's discovery path
 
+**Routing Mechanism:**
+- The AI opens with an open-ended first question (e.g., "What does your business do and what brings you to 3D Visual Pro?")
+- Based on the visitor's response, the AI infers which service is relevant and follows that discovery path
+- If unclear from the first response, the AI follows the General path (which naturally funnels into a specific service path after 1-2 questions)
+- The AI does NOT present a menu of services to choose from -- it routes through conversation
+
 **Product Signal:**
 - `PRODUCT:<type>` emitted once the AI identifies the relevant service
 - Types: `ai_service`, `website`, `marketing`, `consultancy`, `other`
+- Remove `real_estate` from signal regex and system prompt
 
 **Capture Trigger:**
 - Minimum 4 user-AI exchanges before `CAPTURE_READY` can fire
@@ -188,7 +195,7 @@ Same tab structure as v1 (Overview, Leads, Follow-ups, Export) but with the neon
 **Overview tab:**
 - 4 stat cards with glowing neon borders: Total, Hot, Warm, Cold
 - Bar chart with gradient neon bars (leads per day)
-- Fix existing stats bug: ensure leadsByDay data renders correctly in the chart
+- Fix existing stats bug: the Overview stat cards and bar chart show placeholder dashes instead of actual data when leads exist. Likely cause: the `leadsByDay` array from `GET /api/stats` may be empty or the chart rendering logic has a display issue. Investigate the stats endpoint response and the `renderChart()` / `loadStats()` functions in the admin HTML.
 
 **Leads tab:**
 - Searchable table with neon score badges and status dropdown
@@ -226,6 +233,8 @@ Run as part of `initDb()` in `src/db/client.js` — appropriate for current scal
 ### Updated Product Enum
 The `product` field now accepts: `ai_service`, `website`, `marketing`, `consultancy`, `other`
 
+**Legacy migration:** Any existing leads with `product = 'real_estate'` should be displayed as-is in the admin dashboard (graceful handling of unknown product values). No data migration needed -- the admin UI renders whatever string is in the column. The `real_estate` type is removed from the chatbot system prompt and signal regex going forward.
+
 ---
 
 ## 7. API Changes
@@ -233,7 +242,7 @@ The `product` field now accepts: `ai_service`, `website`, `marketing`, `consulta
 ### Updated Routes
 | Method | Route | Change |
 |---|---|---|
-| `POST` | `/api/leads` | Accepts `phone` field in request body |
+| `POST` | `/api/leads` | Body becomes `{ sessionId, name, email, phone, product }` -- phone is optional (nullable TEXT, free-text format e.g. "+62 812 3456 7890", no server-side format validation) |
 | `GET` | `/api/leads` | Returns `phone` and `notes` in response |
 | `GET` | `/api/leads/:id` | Returns `phone` and `notes` in response |
 | `PATCH` | `/api/leads/:id/notes` | **New** — saves admin notes (auth required) |
@@ -244,8 +253,9 @@ The `product` field now accepts: `ai_service`, `website`, `marketing`, `consulta
 PATCH /api/leads/:id/notes
 Auth: Bearer token required
 Body: { "notes": "string" }
-Response: Updated lead record
+Response: { success: true }
 ```
+Consistent with the existing `PATCH /api/leads/:id/status` response pattern.
 
 ---
 
@@ -274,7 +284,7 @@ The Express server will need a CORS update to accept requests from the official 
 ### Modified
 - `src/db/client.js` — add ALTER TABLE statements to `initDb()`
 - `src/db/schema.sql` — add `phone` and `notes` columns to reference schema
-- `src/routes/chat.js` — rewrite SYSTEM_PROMPT, add `marketing` and `consultancy` to product signal regex
+- `src/routes/chat.js` — rewrite SYSTEM_PROMPT, replace product signal regex: remove `real_estate`, add `marketing` and `consultancy`
 - `src/routes/leads.js` — accept `phone` in POST, return `phone`/`notes` in GET, add PATCH notes endpoint, update CSV export
 - `src/services/qualifier.js` — update qualifier prompt for new service types
 - `public/index.html` — full rewrite: 3D Visual Pro editorial landing page
