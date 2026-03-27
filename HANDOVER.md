@@ -15,7 +15,7 @@ John's production lead management system. Visitors chat with an AI that discover
 - [x] Task 9: Landing page with chatbot — DONE
 - [x] Task 10: Floating widget — DONE
 - [x] Task 11: Admin dashboard PWA — DONE
-- [ ] Task 12: GitHub repo setup — needs GitHub username + repo creation
+- [x] Task 12: GitHub repo setup — DONE (https://github.com/jalookout7-eng/lead-capture-chatbot)
 - [ ] Task 13: Render deployment — needs Turso + Render setup
 - [ ] Task 14: Full test suite + smoke test — pending deployment
 
