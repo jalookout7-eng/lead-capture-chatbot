@@ -14,18 +14,15 @@
 ## v1 Status (COMPLETE)
 All backend routes, tests (17/17 passing), landing page, floating widget, and admin PWA built and deployed.
 
-## v2 Improvements (IN PROGRESS — brainstorming phase)
-- **Rebrand**: "John's AI Services" -> "3D Visual Pro" — match existing brand colors (#007bff blue, #1a1a2e dark navy, #00c853 green) and fonts (Montserrat, Plus Jakarta Sans)
-- **Landing page redesign**: Bold promise, 80% refund guarantee, 3D Visual Pro branding, chatbot embedded
-- **Admin dashboard redesign**: Dark + neon futuristic "mission control" aesthetic (#0a0a1a background, cyan/green glowing accents, monospace numbers)
-- **Chatbot AI fixes**:
-  - One question per message (not multiple)
-  - Consultative tone, not salesy — don't pitch during discovery
-  - Capture form only triggers after discovery is genuinely complete
-  - Add mobile number field with country code to capture form
-- **Add notes field**: Admin can add personal notes/comments to leads
-- **Fix overview stats bug**: Test lead shows in Leads tab but not in Overview stats/chart
-- **No emojis**: Anywhere in the UI or code
+## v2 Improvements (IN PROGRESS — design approved, pending implementation plan)
+**Spec:** `docs/superpowers/specs/2026-03-27-v2-improvements-design.md`
+
+1. **Landing page redesign** — Full editorial (hero, problem, services, process, why us, team, CTA) matching 3D Visual Pro brand. Floating chatbot widget with ping animation. Self-contained CSS (.dvp namespace) for future embedding on 3dvisualpro.com via Elementor.
+2. **Chatbot AI rewrite** — New system prompt: one question per turn, consultative tone (no selling), 3D Visual Pro team assistant identity, 4 discovery paths (AI automation, websites, digital marketing, general), min 4 exchanges before capture.
+3. **Admin dashboard redesign** — Dark + neon mission control (#0a0a1a bg, #00ffc8 cyan accents, monospace numbers, glowing borders). No emojis — text labels for scores.
+4. **Database updates** — Add `phone` and `notes` columns to leads table. New PATCH /api/leads/:id/notes endpoint. Updated capture form with phone + country code.
+5. **Bug fixes** — Overview stats not rendering for existing leads. Updated product enum (add `marketing`, `consultancy`).
+6. **No emojis** — Removed from all UI, code, and admin dashboard.
 
 ## Current Stack
 - Node.js + Express (single server)
