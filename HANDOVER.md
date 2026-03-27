@@ -16,8 +16,8 @@ John's production lead management system. Visitors chat with an AI that discover
 - [x] Task 10: Floating widget — DONE
 - [x] Task 11: Admin dashboard PWA — DONE
 - [x] Task 12: GitHub repo setup — DONE (https://github.com/jalookout7-eng/lead-capture-chatbot)
-- [ ] Task 13: Render deployment — needs Turso + Render setup
-- [ ] Task 14: Full test suite + smoke test — pending deployment
+- [x] Task 13: Render deployment — DONE (https://lead-capture-chatbot.onrender.com)
+- [ ] Task 14: Full test suite + smoke test
 
 ## Stack
 - Node.js + Express (single server)
@@ -36,6 +36,10 @@ John's production lead management system. Visitors chat with an AI that discover
 
 ## Environment Variables
 See `.env.example` — set these on Render before deploying.
+
+## Live URL
+https://lead-capture-chatbot.onrender.com
+Admin dashboard: https://lead-capture-chatbot.onrender.com/admin/
 
 ## Running Locally
 1. Copy `.env.example` to `.env` and fill in values
