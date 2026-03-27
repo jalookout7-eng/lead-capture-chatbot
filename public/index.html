@@ -65,12 +65,13 @@
 
     function addMessage(role, text) {
       const container = document.getElementById('messages');
-      const div = document.createElement('div');
-      div.className = role === 'user'
-        ? 'flex justify-end'
-        : 'flex justify-start';
-      div.innerHTML = `<div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${role === 'user' ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}">${text}</div>`;
-      container.appendChild(div);
+      const row = document.createElement('div');
+      row.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+      const bubble = document.createElement('div');
+      bubble.className = `max-w-xs px-4 py-2 rounded-2xl text-sm ${role === 'user' ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`;
+      bubble.textContent = text;
+      row.appendChild(bubble);
+      container.appendChild(row);
       container.scrollTop = container.scrollHeight;
     }
 
@@ -91,26 +92,38 @@
 
     async function sendMessage() {
       const input = document.getElementById('msg-input');
+      const btn = input.nextElementSibling;
       const message = input.value.trim();
       if (!message) return;
       input.value = '';
+      input.disabled = true;
+      btn.disabled = true;
       addMessage('user', message);
       addLoader();
 
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, message })
-      });
-      const data = await res.json();
-      removeLoader();
-      sessionId = data.sessionId;
-      if (data.product) detectedProduct = data.product;
-      addMessage('assistant', data.reply);
-
-      if (data.captureReady) {
-        document.getElementById('input-area').classList.add('hidden');
-        document.getElementById('capture-form').classList.remove('hidden');
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, message })
+        });
+        const data = await res.json();
+        removeLoader();
+        if (!res.ok) throw new Error(data.error || 'Request failed');
+        sessionId = data.sessionId;
+        if (data.product) detectedProduct = data.product;
+        addMessage('assistant', data.reply);
+        if (data.captureReady) {
+          document.getElementById('input-area').classList.add('hidden');
+          document.getElementById('capture-form').classList.remove('hidden');
+        }
+      } catch (err) {
+        removeLoader();
+        addMessage('assistant', 'Something went wrong. Please try again.');
+      } finally {
+        input.disabled = false;
+        btn.disabled = false;
+        input.focus();
       }
     }
 
@@ -119,15 +132,20 @@
       const email = document.getElementById('capture-email').value.trim();
       if (!name || !email) return alert('Please fill in both fields.');
 
-      document.getElementById('capture-form').innerHTML = '<p class="text-sm text-gray-400 text-center py-2">Analysing your information...</p>';
+      const captureDiv = document.getElementById('capture-form');
+      captureDiv.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">Analysing your information...</p>';
 
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, name, email, product: detectedProduct })
-      });
-
-      document.getElementById('capture-form').innerHTML = '<p class="text-sm text-indigo-600 text-center py-2 font-medium">Thanks! I\'ll be in touch soon.</p>';
+      try {
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, name, email, product: detectedProduct })
+        });
+        if (!res.ok) throw new Error('Submission failed');
+        captureDiv.innerHTML = '<p class="text-sm text-indigo-600 text-center py-2 font-medium">Thanks! I\'ll be in touch soon.</p>';
+      } catch (err) {
+        captureDiv.innerHTML = '<p class="text-sm text-red-500 text-center py-2">Something went wrong. Please refresh and try again.</p>';
+      }
     }
 
     // Kick off conversation on load
