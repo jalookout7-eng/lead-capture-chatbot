@@ -1,25 +1,33 @@
-# Handover — Lead Capture & Chatbot System
+# Handover — 3D Visual Pro Lead Capture & Chatbot System
 
 ## What This Is
-John's production lead management system. Visitors chat with an AI that discovers their business needs, captures their details, and qualifies them. John manages leads via a PWA admin dashboard.
+3D Visual Pro's production lead capture and management system. Visitors to the landing page chat with an AI assistant that discovers their business needs through one-question-at-a-time conversation, captures their details (name, email, mobile with country code), qualifies them, and generates personalised follow-up messages. The team manages leads via a PWA admin dashboard.
 
-## Current Status
-- [x] Task 1: Project scaffold — DONE
-- [x] Task 2: Database setup — DONE
-- [x] Task 3: AI service abstraction — DONE
-- [x] Task 4: Auth middleware — DONE
-- [x] Task 5: Chat route — DONE
-- [x] Task 6: Qualifier service — DONE
-- [x] Task 7: Leads routes — DONE
-- [x] Task 8: Follow-up routes — DONE
-- [x] Task 9: Landing page with chatbot — DONE
-- [x] Task 10: Floating widget — DONE
-- [x] Task 11: Admin dashboard PWA — DONE
-- [x] Task 12: GitHub repo setup — DONE (https://github.com/jalookout7-eng/lead-capture-chatbot)
-- [x] Task 13: Render deployment — DONE (https://lead-capture-chatbot.onrender.com)
-- [ ] Task 14: Full test suite + smoke test
+## Business Context
+- **Company**: 3D Visual Pro (3D VP) — 3D virtual tours business in Indonesia, expanding into AI automation, modern websites, digital marketing, and business consultancy
+- **Team**: Farhan Rais Satria (Digital Marketing & Strategy), Wassim Reghis (AI Agents & Automation), John Alexander (CRM & Client Operations) — all based in Dubai
+- **Services**: Paid digital advertising, AI WhatsApp agents, CRM management, modern website builds, business consultancy
+- **Target audience**: Global businesses (not limited to Indonesian property developers)
+- **Pricing model**: Project setup fee + monthly retainer
+- **Guarantee**: 80% refund on setup fee if quality not delivered (20% covers infrastructure)
 
-## Stack
+## v1 Status (COMPLETE)
+All backend routes, tests (17/17 passing), landing page, floating widget, and admin PWA built and deployed.
+
+## v2 Improvements (IN PROGRESS — brainstorming phase)
+- **Rebrand**: "John's AI Services" -> "3D Visual Pro" — match existing brand colors (#007bff blue, #1a1a2e dark navy, #00c853 green) and fonts (Montserrat, Plus Jakarta Sans)
+- **Landing page redesign**: Bold promise, 80% refund guarantee, 3D Visual Pro branding, chatbot embedded
+- **Admin dashboard redesign**: Dark + neon futuristic "mission control" aesthetic (#0a0a1a background, cyan/green glowing accents, monospace numbers)
+- **Chatbot AI fixes**:
+  - One question per message (not multiple)
+  - Consultative tone, not salesy — don't pitch during discovery
+  - Capture form only triggers after discovery is genuinely complete
+  - Add mobile number field with country code to capture form
+- **Add notes field**: Admin can add personal notes/comments to leads
+- **Fix overview stats bug**: Test lead shows in Leads tab but not in Overview stats/chart
+- **No emojis**: Anywhere in the UI or code
+
+## Current Stack
 - Node.js + Express (single server)
 - Turso (hosted SQLite) — @libsql/client
 - Groq + Llama 3.1 8B (swappable via AI_PROVIDER env var)
@@ -29,17 +37,24 @@ John's production lead management system. Visitors chat with an AI that discover
 ## Key Files
 - `src/server.js` — entry point
 - `src/services/ai.js` — AI abstraction (swap provider here)
-- `src/routes/` — all API routes
+- `src/routes/` — all API routes (chat.js, leads.js, followup.js)
+- `src/services/qualifier.js` — AI lead scoring
+- `src/middleware/auth.js` — bearer token auth
+- `public/index.html` — landing page with chatbot
+- `public/widget.html` — floating widget demo
 - `public/admin/index.html` — admin PWA dashboard
-- `docs/superpowers/specs/2026-03-27-lead-capture-chatbot-design.md` — full spec
-- `docs/superpowers/plans/2026-03-27-lead-capture-chatbot.md` — implementation plan
+- `3DVISUALPRO.txt` — existing WordPress landing page (brand reference)
+- `docs/superpowers/specs/2026-03-27-lead-capture-chatbot-design.md` — v1 design spec
+- `docs/superpowers/plans/2026-03-27-lead-capture-chatbot.md` — v1 implementation plan
+
+## Live URLs
+- Landing page: https://lead-capture-chatbot.onrender.com
+- Admin dashboard: https://lead-capture-chatbot.onrender.com/admin/
+- Widget demo: https://lead-capture-chatbot.onrender.com/widget.html
+- GitHub: https://github.com/jalookout7-eng/lead-capture-chatbot
 
 ## Environment Variables
 See `.env.example` — set these on Render before deploying.
-
-## Live URL
-https://lead-capture-chatbot.onrender.com
-Admin dashboard: https://lead-capture-chatbot.onrender.com/admin/
 
 ## Running Locally
 1. Copy `.env.example` to `.env` and fill in values
