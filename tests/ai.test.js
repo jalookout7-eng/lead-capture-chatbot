@@ -33,3 +33,11 @@ test('ai.complete passes messages to provider', async () => {
   const result = await ai.complete(messages);
   expect(result).toBe('Hello from Groq');
 });
+
+test('ai.complete throws on unknown provider', async () => {
+  const originalProvider = process.env.AI_PROVIDER;
+  process.env.AI_PROVIDER = 'unsupported';
+  await expect(ai.complete([{ role: 'user', content: 'Hi' }]))
+    .rejects.toThrow('Unknown AI_PROVIDER: unsupported');
+  process.env.AI_PROVIDER = originalProvider;
+});
