@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lead Admin</title>
+  <link rel="manifest" href="/admin/manifest.json" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans flex">
+
+  <!-- Sidebar -->
+  <nav class="w-56 bg-white border-r border-gray-100 min-h-screen flex flex-col py-6 px-4 shrink-0 hidden md:flex">
+    <div class="font-bold text-gray-900 text-base mb-8 px-2">🔐 Lead Admin</div>
+    <button onclick="showTab('overview')" id="nav-overview" class="nav-btn text-left px-3 py-2 rounded-lg text-sm font-medium mb-1">📊 Overview</button>
+    <button onclick="showTab('leads')" id="nav-leads" class="nav-btn text-left px-3 py-2 rounded-lg text-sm font-medium mb-1">👥 Leads</button>
+    <button onclick="showTab('followups')" id="nav-followups" class="nav-btn text-left px-3 py-2 rounded-lg text-sm font-medium mb-1">✉️ Follow-ups</button>
+    <button onclick="showTab('export')" id="nav-export" class="nav-btn text-left px-3 py-2 rounded-lg text-sm font-medium mb-1">⬇️ Export</button>
+  </nav>
+
+  <!-- Mobile nav -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-2 z-50">
+    <button onclick="showTab('overview')" class="text-xs text-gray-500 flex flex-col items-center gap-1">📊<span>Overview</span></button>
+    <button onclick="showTab('leads')" class="text-xs text-gray-500 flex flex-col items-center gap-1">👥<span>Leads</span></button>
+    <button onclick="showTab('followups')" class="text-xs text-gray-500 flex flex-col items-center gap-1">✉️<span>Follow-ups</span></button>
+    <button onclick="showTab('export')" class="text-xs text-gray-500 flex flex-col items-center gap-1">⬇️<span>Export</span></button>
+  </div>
+
+  <!-- Main content -->
+  <main class="flex-1 px-6 py-6 pb-20 md:pb-6 overflow-auto">
+
+    <!-- Overview tab -->
+    <div id="tab-overview" class="tab-content">
+      <h1 class="text-xl font-bold text-gray-900 mb-6">Overview</h1>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
+          <div id="stat-total" class="text-3xl font-bold text-gray-900">—</div>
+          <div class="text-xs text-gray-500 mt-1">Total Leads</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
+          <div id="stat-hot" class="text-3xl font-bold text-red-500">—</div>
+          <div class="text-xs text-gray-500 mt-1">🔥 Hot</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
+          <div id="stat-warm" class="text-3xl font-bold text-amber-500">—</div>
+          <div class="text-xs text-gray-500 mt-1">🌡️ Warm</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
+          <div id="stat-cold" class="text-3xl font-bold text-indigo-400">—</div>
+          <div class="text-xs text-gray-500 mt-1">❄️ Cold</div>
+        </div>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div class="text-sm font-semibold text-gray-700 mb-4">Leads per day</div>
+        <div id="chart" class="flex items-end gap-2 h-32 overflow-x-auto"></div>
+      </div>
+    </div>
+
+    <!-- Leads tab -->
+    <div id="tab-leads" class="tab-content hidden">
+      <h1 class="text-xl font-bold text-gray-900 mb-4">Leads</h1>
+      <input id="leads-search" type="text" placeholder="Search by name or email..." oninput="renderLeads()" class="w-full max-w-sm border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="grid grid-cols-4 md:grid-cols-5 gap-2 px-4 py-3 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          <span>Name</span>
+          <span class="hidden md:block">Email</span>
+          <span>Product</span>
+          <span>Score</span>
+          <span>Status</span>
+        </div>
+        <div id="leads-table-body"></div>
+      </div>
+
+      <!-- Lead detail panel -->
+      <div id="lead-detail" class="hidden mt-6 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <button onclick="document.getElementById('lead-detail').classList.add('hidden')" class="text-sm text-gray-400 hover:text-gray-600 mb-4">← Back</button>
+        <h2 id="detail-name" class="text-lg font-bold text-gray-900 mb-1"></h2>
+        <p id="detail-email" class="text-sm text-gray-400 mb-4"></p>
+        <div class="mb-4">
+          <div class="text-xs font-semibold text-gray-500 uppercase mb-1">AI Summary</div>
+          <p id="detail-summary" class="text-sm text-gray-700"></p>
+        </div>
+        <div class="mb-4">
+          <div class="text-xs font-semibold text-gray-500 uppercase mb-1">Bottlenecks</div>
+          <ul id="detail-bottlenecks" class="text-sm text-gray-700 list-disc list-inside space-y-1"></ul>
+        </div>
+        <div>
+          <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Conversation</div>
+          <div id="detail-messages" class="space-y-2 max-h-64 overflow-y-auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Follow-ups tab -->
+    <div id="tab-followups" class="tab-content hidden">
+      <h1 class="text-xl font-bold text-gray-900 mb-6">Follow-ups</h1>
+      <div id="followups-list" class="space-y-4"></div>
+    </div>
+
+    <!-- Export tab -->
+    <div id="tab-export" class="tab-content hidden">
+      <h1 class="text-xl font-bold text-gray-900 mb-6">Export</h1>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 max-w-sm">
+        <p class="text-sm text-gray-500 mb-4">Download all leads as a CSV file.</p>
+        <button onclick="downloadCsv()" class="w-full bg-indigo-600 text-white text-sm rounded-lg py-2 hover:bg-indigo-700 transition">⬇️ Download CSV</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // --- Auth ---
+    let token = localStorage.getItem('adminToken');
+    if (!token) {
+      token = prompt('Enter your admin token:');
+      if (token) localStorage.setItem('adminToken', token);
+    }
+
+    const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` });
+
+    // --- State ---
+    let allLeads = [];
+    let statsData = null;
+
+    // --- Tab switching ---
+    function showTab(name) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('tab-' + name).classList.remove('hidden');
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('bg-indigo-50', 'text-indigo-700');
+        el.classList.add('text-gray-600');
+      });
+      const btn = document.getElementById('nav-' + name);
+      if (btn) {
+        btn.classList.remove('text-gray-600');
+        btn.classList.add('bg-indigo-50', 'text-indigo-700');
+      }
+      if (name === 'leads') renderLeads();
+      if (name === 'followups') renderFollowups();
+    }
+
+    // --- Stats ---
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats', { headers: headers() });
+        if (!res.ok) throw new Error('Failed to load stats');
+        statsData = await res.json();
+        document.getElementById('stat-total').textContent = statsData.total;
+        document.getElementById('stat-hot').textContent = statsData.hot;
+        document.getElementById('stat-warm').textContent = statsData.warm;
+        document.getElementById('stat-cold').textContent = statsData.cold;
+        renderChart(statsData.leadsByDay || []);
+      } catch (e) {
+        console.error('Stats error:', e);
+      }
+    }
+
+    function renderChart(days) {
+      const chart = document.getElementById('chart');
+      chart.innerHTML = '';
+      if (!days.length) {
+        const msg = document.createElement('p');
+        msg.className = 'text-xs text-gray-400';
+        msg.textContent = 'No data yet';
+        chart.appendChild(msg);
+        return;
+      }
+      const max = Math.max(...days.map(d => d.count), 1);
+      days.forEach(d => {
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center gap-1 flex-shrink-0';
+        const bar = document.createElement('div');
+        const pct = Math.round((d.count / max) * 100);
+        bar.style.width = '28px';
+        bar.style.height = pct + '%';
+        bar.style.minHeight = '4px';
+        bar.style.background = '#6366f1';
+        bar.style.borderRadius = '3px 3px 0 0';
+        bar.title = d.date + ': ' + d.count;
+        const label = document.createElement('span');
+        label.className = 'text-xs text-gray-400';
+        label.textContent = d.date.slice(5); // MM-DD
+        col.appendChild(bar);
+        col.appendChild(label);
+        chart.appendChild(col);
+      });
+    }
+
+    // --- Leads ---
+    async function loadLeads() {
+      try {
+        const res = await fetch('/api/leads', { headers: headers() });
+        if (!res.ok) throw new Error('Failed to load leads');
+        allLeads = await res.json();
+      } catch (e) {
+        console.error('Leads error:', e);
+      }
+    }
+
+    const SCORE_BADGE = {
+      hot: '🔥 Hot',
+      warm: '🌡️ Warm',
+      cold: '❄️ Cold'
+    };
+    const SCORE_COLOR = {
+      hot: 'text-red-500',
+      warm: 'text-amber-500',
+      cold: 'text-indigo-400'
+    };
+
+    function renderLeads() {
+      const q = (document.getElementById('leads-search').value || '').toLowerCase();
+      const filtered = allLeads.filter(l =>
+        l.name.toLowerCase().includes(q) || l.email.toLowerCase().includes(q)
+      );
+      const body = document.getElementById('leads-table-body');
+      body.innerHTML = '';
+      if (!filtered.length) {
+        const row = document.createElement('div');
+        row.className = 'px-4 py-6 text-sm text-gray-400 text-center';
+        row.textContent = 'No leads found.';
+        body.appendChild(row);
+        return;
+      }
+      filtered.forEach(lead => {
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-4 md:grid-cols-5 gap-2 px-4 py-3 text-sm border-t border-gray-50 hover:bg-gray-50 cursor-pointer items-center';
+        row.onclick = () => showLeadDetail(lead.id);
+
+        const name = document.createElement('span');
+        name.className = 'font-medium text-gray-900 truncate';
+        name.textContent = lead.name;
+
+        const email = document.createElement('span');
+        email.className = 'hidden md:block text-gray-400 truncate';
+        email.textContent = lead.email;
+
+        const product = document.createElement('span');
+        product.className = 'text-gray-500 text-xs truncate';
+        product.textContent = lead.product;
+
+        const score = document.createElement('span');
+        score.className = 'text-xs font-semibold ' + (SCORE_COLOR[lead.score] || 'text-gray-400');
+        score.textContent = SCORE_BADGE[lead.score] || lead.score;
+
+        const statusSel = document.createElement('select');
+        statusSel.className = 'text-xs border border-gray-200 rounded px-1 py-1 bg-white';
+        ['new','contacted','converted','closed'].forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s;
+          opt.textContent = s;
+          if (s === lead.status) opt.selected = true;
+          statusSel.appendChild(opt);
+        });
+        statusSel.onclick = e => e.stopPropagation();
+        statusSel.onchange = e => updateStatus(lead.id, e.target.value);
+
+        row.appendChild(name);
+        row.appendChild(email);
+        row.appendChild(product);
+        row.appendChild(score);
+        row.appendChild(statusSel);
+        body.appendChild(row);
+      });
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        await fetch('/api/leads/' + id + '/status', {
+          method: 'PATCH',
+          headers: headers(),
+          body: JSON.stringify({ status })
+        });
+        const lead = allLeads.find(l => l.id === id);
+        if (lead) lead.status = status;
+      } catch (e) {
+        console.error('Status update failed:', e);
+      }
+    }
+
+    async function showLeadDetail(id) {
+      try {
+        const res = await fetch('/api/leads/' + id, { headers: headers() });
+        if (!res.ok) throw new Error('Failed to load lead');
+        const data = await res.json();
+        document.getElementById('detail-name').textContent = data.name;
+        document.getElementById('detail-email').textContent = data.email;
+        document.getElementById('detail-summary').textContent = data.summary || '—';
+
+        const bottlenecks = document.getElementById('detail-bottlenecks');
+        bottlenecks.innerHTML = '';
+        const bList = (() => { try { return JSON.parse(data.bottlenecks || '[]'); } catch { return []; } })();
+        bList.forEach(b => {
+          const li = document.createElement('li');
+          li.textContent = b;
+          bottlenecks.appendChild(li);
+        });
+        if (!bList.length) {
+          const li = document.createElement('li');
+          li.textContent = '—';
+          bottlenecks.appendChild(li);
+        }
+
+        const msgs = document.getElementById('detail-messages');
+        msgs.innerHTML = '';
+        const messages = data.messages || [];
+        messages.filter(m => m.role !== 'system').forEach(m => {
+          const div = document.createElement('div');
+          div.className = m.role === 'user' ? 'flex justify-end' : 'flex justify-start';
+          const bubble = document.createElement('div');
+          bubble.className = `max-w-xs px-3 py-2 rounded-xl text-sm ${m.role === 'user' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700'}`;
+          bubble.textContent = m.content;
+          div.appendChild(bubble);
+          msgs.appendChild(div);
+        });
+
+        document.getElementById('lead-detail').classList.remove('hidden');
+        document.getElementById('lead-detail').scrollIntoView({ behavior: 'smooth' });
+      } catch (e) {
+        console.error('Lead detail error:', e);
+      }
+    }
+
+    // --- Follow-ups ---
+    async function renderFollowups() {
+      const list = document.getElementById('followups-list');
+      list.innerHTML = '';
+      const pending = allLeads.filter(l => !l.followup_sent && l.followup);
+      if (!pending.length) {
+        const msg = document.createElement('p');
+        msg.className = 'text-sm text-gray-400';
+        msg.textContent = 'No pending follow-ups.';
+        list.appendChild(msg);
+        return;
+      }
+      pending.forEach(lead => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl border border-gray-100 shadow-sm p-5';
+        card.id = 'fu-card-' + lead.id;
+
+        const title = document.createElement('div');
+        title.className = 'font-semibold text-gray-800 text-sm mb-1';
+        title.textContent = lead.name + ' · ' + lead.email;
+        card.appendChild(title);
+
+        const score = document.createElement('div');
+        score.className = 'text-xs ' + (SCORE_COLOR[lead.score] || 'text-gray-400') + ' mb-3';
+        score.textContent = SCORE_BADGE[lead.score] || lead.score;
+        card.appendChild(score);
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-400';
+        textarea.rows = 4;
+        textarea.value = lead.followup || '';
+        card.appendChild(textarea);
+
+        const btns = document.createElement('div');
+        btns.className = 'flex gap-2';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'flex-1 border border-indigo-300 text-indigo-600 text-sm rounded-lg py-2 hover:bg-indigo-50 transition';
+        saveBtn.textContent = 'Save Draft';
+        saveBtn.onclick = async () => {
+          try {
+            await fetch('/api/followup/' + lead.id, {
+              method: 'PATCH',
+              headers: headers(),
+              body: JSON.stringify({ followup: textarea.value })
+            });
+            lead.followup = textarea.value;
+          } catch (e) { console.error(e); }
+        };
+
+        const sentBtn = document.createElement('button');
+        sentBtn.className = 'flex-1 bg-indigo-600 text-white text-sm rounded-lg py-2 hover:bg-indigo-700 transition';
+        sentBtn.textContent = 'Mark Sent';
+        sentBtn.onclick = async () => {
+          try {
+            await fetch('/api/followup/' + lead.id, {
+              method: 'PATCH',
+              headers: headers(),
+              body: JSON.stringify({ followup: textarea.value, sent: true })
+            });
+            lead.followup_sent = 1;
+            const cardEl = document.getElementById('fu-card-' + lead.id);
+            if (cardEl) cardEl.remove();
+          } catch (e) { console.error(e); }
+        };
+
+        btns.appendChild(saveBtn);
+        btns.appendChild(sentBtn);
+        card.appendChild(btns);
+        list.appendChild(card);
+      });
+    }
+
+    // --- Export ---
+    async function downloadCsv() {
+      const url = '/api/export';
+      const res = await fetch(url, { headers: headers() });
+      if (!res.ok) return alert('Export failed.');
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'leads.csv';
+      a.click();
+    }
+
+    // --- Init ---
+    async function init() {
+      await Promise.all([loadStats(), loadLeads()]);
+      showTab('overview');
+    }
+
+    // Service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW reg failed:', e));
+    }
+
+    init();
+  </script>
+</body>
+</html>
