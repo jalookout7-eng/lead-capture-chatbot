@@ -12,6 +12,7 @@ router.post('/', async (req, res) => {
   if (!sessionId || !name || !email || !product) {
     return res.status(400).json({ error: 'sessionId, name, email, and product are required' });
   }
+
   try {
     const client = getClient();
     const now = new Date().toISOString();

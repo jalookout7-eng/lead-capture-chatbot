@@ -32,7 +32,18 @@ async function qualifyLead(conversationMessages) {
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Qualifier returned invalid JSON');
 
-  return JSON.parse(jsonMatch[0]);
+  const result = JSON.parse(jsonMatch[0]);
+
+  // Validate required fields and score value
+  const validScores = ['hot', 'warm', 'cold'];
+  if (!result.summary || !result.bottlenecks || !result.followup) {
+    throw new Error('Qualifier response missing required fields');
+  }
+  if (!validScores.includes(result.score)) {
+    throw new Error(`Qualifier returned invalid score: ${result.score}`);
+  }
+
+  return result;
 }
 
 module.exports = { qualifyLead };
