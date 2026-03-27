@@ -5,19 +5,19 @@ John's production lead management system. Visitors chat with an AI that discover
 
 ## Current Status
 - [x] Task 1: Project scaffold — DONE
-- [ ] Task 2: Database setup
-- [ ] Task 3: AI service abstraction
-- [ ] Task 4: Auth middleware
-- [ ] Task 5: Chat route
-- [ ] Task 6: Qualifier service
-- [ ] Task 7: Leads routes
-- [ ] Task 8: Follow-up routes
-- [ ] Task 9: Landing page with chatbot
-- [ ] Task 10: Floating widget
-- [ ] Task 11: Admin dashboard PWA
-- [ ] Task 12: GitHub repo setup
-- [ ] Task 13: Render deployment
-- [ ] Task 14: Full test suite + smoke test
+- [x] Task 2: Database setup — DONE
+- [x] Task 3: AI service abstraction — DONE
+- [x] Task 4: Auth middleware — DONE
+- [x] Task 5: Chat route — DONE
+- [x] Task 6: Qualifier service — DONE
+- [x] Task 7: Leads routes — DONE
+- [x] Task 8: Follow-up routes — DONE
+- [x] Task 9: Landing page with chatbot — DONE
+- [x] Task 10: Floating widget — DONE
+- [x] Task 11: Admin dashboard PWA — DONE
+- [ ] Task 12: GitHub repo setup — needs GitHub username + repo creation
+- [ ] Task 13: Render deployment — needs Turso + Render setup
+- [ ] Task 14: Full test suite + smoke test — pending deployment
 
 ## Stack
 - Node.js + Express (single server)
