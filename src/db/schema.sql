@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS leads (
   created_at      TEXT NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at);
+
 CREATE TABLE IF NOT EXISTS chat_sessions (
   id          TEXT PRIMARY KEY,
   lead_id     TEXT REFERENCES leads(id),
@@ -19,3 +21,5 @@ CREATE TABLE IF NOT EXISTS chat_sessions (
   created_at  TEXT NOT NULL,
   updated_at  TEXT NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_lead_id ON chat_sessions(lead_id);

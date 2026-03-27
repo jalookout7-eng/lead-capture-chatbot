@@ -6,6 +6,9 @@ let _client;
 
 function getClient() {
   if (!_client) {
+    if (!process.env.TURSO_URL || !process.env.TURSO_TOKEN) {
+      throw new Error('Missing required environment variables: TURSO_URL and TURSO_TOKEN');
+    }
     _client = createClient({
       url: process.env.TURSO_URL,
       authToken: process.env.TURSO_TOKEN,
