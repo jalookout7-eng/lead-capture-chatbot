@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>John's AI Services — Let's Talk</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+    <span class="font-bold text-gray-900 text-lg">John · AI Services</span>
+    <span class="text-sm text-gray-400">Privacy-first · No data leaks</span>
+  </header>
+
+  <!-- Main: two-column on desktop, stacked on mobile -->
+  <main class="max-w-6xl mx-auto px-4 py-12 flex flex-col lg:flex-row gap-12 items-start">
+
+    <!-- Left: pitch -->
+    <section class="flex-1">
+      <h1 class="text-4xl font-bold text-gray-900 leading-tight mb-4">
+        AI systems that work.<br/>Data that stays yours.
+      </h1>
+      <p class="text-gray-500 text-lg mb-6">
+        I build custom AI chatbots, lead capture systems, and automation tools for businesses that take their data seriously.
+      </p>
+      <ul class="space-y-2 text-gray-600">
+        <li>✦ AI chatbots &amp; lead capture systems</li>
+        <li>✦ Modern websites &amp; landing pages — delivered in 1 day</li>
+        <li>✦ Real Estate Administration Handbook</li>
+        <li>✦ No Zapier. No CRMs. Your data stays private.</li>
+      </ul>
+    </section>
+
+    <!-- Right: chatbot panel -->
+    <section class="w-full lg:w-96 bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col overflow-hidden" style="height:520px">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-green-400"></div>
+        <span class="font-semibold text-gray-800 text-sm">Chat with me</span>
+      </div>
+
+      <!-- Messages -->
+      <div id="messages" class="flex-1 overflow-y-auto px-4 py-4 space-y-3"></div>
+
+      <!-- Capture form (hidden until captureReady) -->
+      <div id="capture-form" class="hidden px-4 py-3 border-t border-gray-100 bg-gray-50">
+        <p class="text-sm text-gray-500 mb-2">To continue, drop your details below:</p>
+        <input id="capture-name" type="text" placeholder="Your name" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        <input id="capture-email" type="email" placeholder="Your email" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        <button onclick="submitCapture()" class="w-full bg-indigo-600 text-white text-sm rounded-lg py-2 hover:bg-indigo-700 transition">Send</button>
+      </div>
+
+      <!-- Input -->
+      <div id="input-area" class="px-4 py-3 border-t border-gray-100 flex gap-2">
+        <input id="msg-input" type="text" placeholder="Type a message..." class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" onkeydown="if(event.key==='Enter')sendMessage()" />
+        <button onclick="sendMessage()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition">→</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let sessionId = null;
+    let detectedProduct = 'other';
+
+    function addMessage(role, text) {
+      const container = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.className = role === 'user'
+        ? 'flex justify-end'
+        : 'flex justify-start';
+      div.innerHTML = `<div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${role === 'user' ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}">${text}</div>`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addLoader() {
+      const container = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.id = 'loader';
+      div.className = 'flex justify-start';
+      div.innerHTML = `<div class="bg-gray-100 text-gray-400 px-4 py-2 rounded-2xl text-sm rounded-bl-sm">...</div>`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function removeLoader() {
+      const loader = document.getElementById('loader');
+      if (loader) loader.remove();
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('msg-input');
+      const message = input.value.trim();
+      if (!message) return;
+      input.value = '';
+      addMessage('user', message);
+      addLoader();
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, message })
+      });
+      const data = await res.json();
+      removeLoader();
+      sessionId = data.sessionId;
+      if (data.product) detectedProduct = data.product;
+      addMessage('assistant', data.reply);
+
+      if (data.captureReady) {
+        document.getElementById('input-area').classList.add('hidden');
+        document.getElementById('capture-form').classList.remove('hidden');
+      }
+    }
+
+    async function submitCapture() {
+      const name = document.getElementById('capture-name').value.trim();
+      const email = document.getElementById('capture-email').value.trim();
+      if (!name || !email) return alert('Please fill in both fields.');
+
+      document.getElementById('capture-form').innerHTML = '<p class="text-sm text-gray-400 text-center py-2">Analysing your information...</p>';
+
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, name, email, product: detectedProduct })
+      });
+
+      document.getElementById('capture-form').innerHTML = '<p class="text-sm text-indigo-600 text-center py-2 font-medium">Thanks! I\'ll be in touch soon.</p>';
+    }
+
+    // Kick off conversation on load
+    window.onload = () => {
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: null, message: 'Hello' })
+      }).then(r => r.json()).then(data => {
+        sessionId = data.sessionId;
+        addMessage('assistant', data.reply);
+      });
+    };
+  </script>
+</body>
+</html>
