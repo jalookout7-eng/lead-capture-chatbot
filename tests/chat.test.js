@@ -14,6 +14,7 @@ jest.mock('../src/db/client', () => ({
 }));
 
 const app = require('../src/server');
+const ai = require('../src/services/ai');
 
 describe('POST /api/chat', () => {
   test('returns 400 if message is missing', async () => {
@@ -38,5 +39,24 @@ describe('POST /api/chat', () => {
       .send({ sessionId: null, message: 'Hello' });
     expect(typeof res.body.reply).toBe('string');
     expect(res.body.reply.length).toBeGreaterThan(0);
+  });
+
+  test('detects marketing product signal', async () => {
+    ai.complete.mockResolvedValueOnce('That sounds interesting!\nPRODUCT:marketing\n');
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ sessionId: null, message: 'I need help with ads' });
+    expect(res.status).toBe(200);
+    expect(res.body.product).toBe('marketing');
+    expect(res.body.reply).not.toContain('PRODUCT:');
+  });
+
+  test('detects consultancy product signal', async () => {
+    ai.complete.mockResolvedValueOnce('Interesting!\nPRODUCT:consultancy\n');
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ sessionId: null, message: 'I need business advice' });
+    expect(res.status).toBe(200);
+    expect(res.body.product).toBe('consultancy');
   });
 });
