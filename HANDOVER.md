@@ -81,66 +81,61 @@ Built 2026-03-27. All 14 tasks completed. 17 tests passing across 5 test suites.
 
 ---
 
-## v2 — Planned Improvements (DESIGN APPROVED, PENDING IMPLEMENTATION PLAN)
+## v2 — 3D Visual Pro Rebrand (COMPLETE)
+
+Built 2026-03-28. All 11 tasks completed. 23 tests passing across 5 test suites. 8 commits.
 
 **Full spec:** `docs/superpowers/specs/2026-03-27-v2-improvements-design.md`
+**Implementation plan:** `docs/superpowers/plans/2026-03-28-v2-improvements.md`
 
 ### 1. Landing Page Redesign
-Rebrand from "John's AI Services" to **3D Visual Pro**. Full editorial page matching the existing WordPress brand (see `3DVISUALPRO.txt` for reference).
+Full editorial marketing page for **3D Visual Pro** with 7 sections: Hero (headline, stats bar, guarantee badge, dual CTAs) > Problem (4-card grid) > Services (4 service cards) > How It Works (5-step process table/cards) > Why Choose Us (3 cards) > Team (3 members with WordPress photos) > Final CTA (dark section).
 
-**Structure:** Hero (bold headline, guarantee badge, stats bar) > Problem (4 pain-point cards) > Services (4 service cards) > How It Works (5-step process) > Why Choose Us (3 cards including refund guarantee) > Team (3 members with photos) > Final CTA (dark section).
+**Floating chatbot widget** replaces the inline chatbot panel. Pulse animation on load. The chatbot is the sole capture mechanism — no form cards on page.
 
-**Floating chatbot widget** replaces the inline chatbot panel. Pings/pulses on load to draw attention. The landing page has NO form card — the chatbot is the sole capture mechanism.
+**Brand:** `.dvp-` CSS namespace, Montserrat headings, Plus Jakarta Sans body, `#007bff` blue primary, `#1a1a2e` dark navy, `#00c853` green success.
 
-**Brand:** `.dvp` CSS namespace, Montserrat headings, Plus Jakarta Sans body, `#007bff` blue primary, `#1a1a2e` dark navy, `#00c853` green success.
-
-**Embeddability:** Self-contained HTML/CSS with configurable `API_BASE` variable. Can later be dropped into 3dvisualpro.com WordPress site via Elementor HTML widget. CORS configuration will be needed at that point (out of scope for now).
+**Embeddability:** Self-contained HTML/CSS with configurable `API_BASE` variable via `window.DVP_CHAT_CONFIG.apiBase`. Can be embedded on 3dvisualpro.com via Elementor HTML widget (CORS config needed at that point — out of scope for now).
 
 ### 2. Chatbot AI Rewrite
-**Problems with v1 chatbot:**
-- Asked multiple questions in a single message (especially toward end of discovery)
-- Sounded too salesy — pitched 3D Visual Pro's value during discovery instead of listening
-- Triggered CAPTURE_READY while questions were still pending, closing the chat input before the visitor could answer
-- Identified itself as "John" instead of the team
-
-**v2 fixes — new system prompt enforces:**
+New system prompt enforces:
 - Identity: "3D Visual Pro assistant", speaks as "we"/"our team"
 - One question per message, always
-- 2-3 sentences max per response (token efficiency)
+- 2-3 sentences max per response
 - Consultative tone: curious and helpful, never pitching or selling
 - Never asks about budget or timeline
 - 4 discovery paths: AI Automation, Modern Websites, Digital Marketing, General/Not Sure
-- Routing: open-ended first question, AI infers service from response (no menu)
-- General path funnels into a specific service path after 1-2 questions
+- Routing through natural conversation (no menu)
 - Minimum 4 exchanges before CAPTURE_READY can fire
-- CAPTURE_READY only after discovery is genuinely complete
 
-**Updated product types:** `ai_service`, `website`, `marketing`, `consultancy`, `other` (removes `real_estate`). Legacy `real_estate` values displayed as-is in admin — no data migration.
+**Product types:** `ai_service`, `website`, `marketing`, `consultancy`, `other` (removed `real_estate`). Legacy values displayed as-is in admin.
 
 ### 3. Admin Dashboard — Dark + Neon Mission Control
-Complete visual overhaul. Dark background (#0a0a1a), cyan-green neon accents (#00ffc8), glowing borders, monospace numbers. No emojis anywhere — colored text labels (HOT, WARM, COLD) instead.
+Complete visual overhaul. Dark background (#0a0a1a), cyan-green neon accents (#00ffc8), glowing borders, monospace numbers. Colored text labels (HOT, WARM, COLD) — no emojis.
 
-**Same 4 tabs:** Overview (fix stats bug), Leads (add notes field + phone display), Follow-ups, Export (add phone + notes to CSV).
+**4 tabs:** Overview (stats bug fixed), Leads (notes field + phone display), Follow-ups, Export (phone + notes in CSV).
 
 **New features:**
-- Notes textarea in lead detail view — editable, auto-saves on blur
-- Phone number displayed in leads table and detail view
-- Stats bug fix: Overview cards and chart not rendering data for existing leads
+- Login overlay (replaces prompt())
+- Notes textarea in lead detail — auto-saves on blur via PATCH /api/leads/:id/notes
+- Phone number displayed in detail view
+- Stats bug fixed: stat cards and chart now render actual data
+- 401 handling: clears token and shows login overlay
 
 ### 4. Database & API Updates
-**New columns:** `phone TEXT` (optional, free-text with country code) and `notes TEXT` on leads table. Added via ALTER TABLE in initDb().
+**New columns:** `phone TEXT` and `notes TEXT` on leads table. Added via ALTER TABLE in initDb() with try/catch for idempotency.
 
 **New endpoint:** `PATCH /api/leads/:id/notes` — saves admin notes, returns `{ success: true }`.
 
 **Updated endpoints:** POST /api/leads accepts `phone`, GET endpoints return `phone` and `notes`, CSV export includes both new columns.
 
 ### 5. Capture Form Update
-Add mobile number field with country code to the chatbot capture form (alongside existing name and email fields). Phone is optional — no server-side format validation.
+Phone field added to chatbot capture form (landing page and widget). Optional, free-text with country code, no server-side format validation.
 
 ---
 
 ## Known Issues / Bugs
-- **Overview stats bug:** Stat cards show placeholder dashes and bar chart is empty even when leads exist in the database. Leads appear correctly in the Leads tab. Likely cause: leadsByDay array from GET /api/stats may be empty, or renderChart()/loadStats() has a display issue.
+- None currently tracked.
 
 ---
 
@@ -162,9 +157,9 @@ Add mobile number field with country code to the chatbot capture form (alongside
 ### Frontend
 | File | Purpose |
 |------|---------|
-| `public/index.html` | Landing page with chatbot (v1 — will be rewritten in v2) |
-| `public/widget.html` | Floating widget demo (will be updated in v2) |
-| `public/admin/index.html` | Admin PWA dashboard (will be rewritten in v2) |
+| `public/index.html` | 3D Visual Pro editorial landing page with floating chatbot widget |
+| `public/widget.html` | Standalone floating widget demo with API_BASE config |
+| `public/admin/index.html` | Dark neon mission control admin dashboard |
 | `public/admin/manifest.json` | PWA manifest |
 | `public/sw.js` | Service worker for offline caching |
 
@@ -176,6 +171,7 @@ Add mobile number field with country code to the chatbot capture form (alongside
 | `docs/superpowers/specs/2026-03-27-lead-capture-chatbot-design.md` | v1 design spec |
 | `docs/superpowers/specs/2026-03-27-v2-improvements-design.md` | v2 improvements design spec |
 | `docs/superpowers/plans/2026-03-27-lead-capture-chatbot.md` | v1 implementation plan (14 tasks) |
+| `docs/superpowers/plans/2026-03-28-v2-improvements.md` | v2 implementation plan (11 tasks) |
 | `.env.example` | Environment variable template |
 
 ### Tests
@@ -212,12 +208,13 @@ See `.env.example`. All must be set on Render:
 4. Open http://localhost:3000
 
 ## Running Tests
-`npm test` — expects 17 tests passing across 5 suites.
+`npm test` — expects 23 tests passing across 5 suites.
 
 ---
 
 ## Next Steps
-1. **Create v2 implementation plan** — invoke writing-plans skill to break the v2 spec into ordered tasks
-2. **Execute v2 tasks** — subagent-driven development, same approach as v1
-3. **Push to GitHub + redeploy on Render** — after all v2 tasks complete
-4. **Smoke test live deployment** — verify chatbot behavior, admin dashboard, and capture flow end-to-end
+1. **Smoke test live deployment** — verify chatbot behavior, admin dashboard, and capture flow end-to-end at https://lead-capture-chatbot.onrender.com
+2. **Embed chatbot on WordPress** — drop widget HTML into Elementor HTML widget on 3dvisualpro.com, set API_BASE to Render URL, configure CORS on Express
+3. **Visitor analytics** — add page view tracking
+4. **Automated follow-ups** — AI-powered email/WhatsApp follow-up agent
+5. **Upgrade AI provider** — swap from Groq/Llama to Claude or GPT-4 for better conversation quality
