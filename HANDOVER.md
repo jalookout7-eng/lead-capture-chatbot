@@ -134,6 +134,48 @@ Phone field added to chatbot capture form (landing page and widget). Optional, f
 
 ---
 
+## Privacy Architecture
+
+**Core principle:** No third-party CRMs. All lead data stays under the team's direct control.
+
+**Data flow:**
+- **Chat messages** (anonymous conversation text) — sent to Groq's API for AI response generation. Groq processes transiently, does not train on API data, does not store long-term. No personal details are included in these calls.
+- **Personal details** (name, email, phone) — captured via the form AFTER chat, sent directly to Turso database. Groq never sees these.
+- **Lead data** (scores, summaries, notes, follow-ups) — stored in Turso, accessed only via the team's auth tokens.
+
+| Data | Who sees it |
+|------|------------|
+| Chat conversation text | Groq (transiently, for AI replies) + Turso (stored) |
+| Name, email, phone | Turso only |
+| Lead scores, notes, follow-ups | Turso only |
+| Admin dashboard | Anyone with the ADMIN_TOKEN |
+
+**Future option:** Self-host an open-source LLM (e.g., Llama running locally) to eliminate even the transient Groq dependency. The `AI_PROVIDER` abstraction in `src/services/ai.js` was designed for this swap.
+
+---
+
+## WordPress Embedding Plan
+
+The chatbot widget is built ready for embedding on 3dvisualpro.com:
+
+1. Copy the floating widget HTML/CSS/JS from `public/index.html`
+2. Paste into an Elementor HTML widget on the WordPress site
+3. Set config: `window.DVP_CHAT_CONFIG = { apiBase: 'https://lead-capture-chatbot.onrender.com' }`
+4. Add CORS to Express server to allow requests from the WordPress domain
+
+**Speed note:** Render starter tier has cold starts (30-50s after inactivity). Options: upgrade to Render paid plan (always-on), migrate to Railway/Fly.io, or self-host on a VPS.
+
+---
+
+## 80% Money-Back Guarantee — Explained
+
+The guarantee applies to the project setup fee only (not the monthly retainer):
+- **80% refunded** = the team's complete margin and incentives. This is everything the team would have earned for their work.
+- **20% retained** (or less) = covers third-party infrastructure costs already paid on the client's behalf: AI model subscriptions (Groq/etc.), database hosting (Turso), server hosting (Render), and other tools.
+- The client does not pay for work that doesn't deliver.
+
+---
+
 ## Known Issues / Bugs
 - None currently tracked.
 
@@ -213,8 +255,9 @@ See `.env.example`. All must be set on Render:
 ---
 
 ## Next Steps
-1. **Smoke test live deployment** — verify chatbot behavior, admin dashboard, and capture flow end-to-end at https://lead-capture-chatbot.onrender.com
-2. **Embed chatbot on WordPress** — drop widget HTML into Elementor HTML widget on 3dvisualpro.com, set API_BASE to Render URL, configure CORS on Express
-3. **Visitor analytics** — add page view tracking
-4. **Automated follow-ups** — AI-powered email/WhatsApp follow-up agent
-5. **Upgrade AI provider** — swap from Groq/Llama to Claude or GPT-4 for better conversation quality
+1. **Smoke test live deployment** — verify chatbot, admin dashboard, and capture flow at https://lead-capture-chatbot.onrender.com
+2. **Add privacy/trust section to landing page** — explain the privacy-first approach as a selling point for prospects
+3. **Embed chatbot on WordPress** — drop widget into Elementor HTML widget on 3dvisualpro.com, set API_BASE, configure CORS
+4. **Visitor analytics** — add page view tracking
+5. **Automated follow-ups** — AI-powered email/WhatsApp follow-up agent
+6. **Upgrade AI provider** — swap from Groq/Llama to Claude or GPT-4 for better conversation quality
