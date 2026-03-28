@@ -8,7 +8,7 @@ const router = express.Router();
 
 // POST /api/leads — capture lead and run AI qualification
 router.post('/', async (req, res) => {
-  const { sessionId, name, email, product } = req.body;
+  const { sessionId, name, email, product, phone } = req.body;
   if (!sessionId || !name || !email || !product) {
     return res.status(400).json({ error: 'sessionId, name, email, and product are required' });
   }
@@ -29,9 +29,9 @@ router.post('/', async (req, res) => {
     const { summary, bottlenecks, score, followup } = await qualifyLead(messages);
 
     await client.execute({
-      sql: `INSERT INTO leads (id, name, email, product, summary, bottlenecks, score, followup, followup_sent, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'new', ?)`,
-      args: [id, name, email, product, summary, JSON.stringify(bottlenecks), score, followup, now]
+      sql: `INSERT INTO leads (id, name, email, product, phone, summary, bottlenecks, score, followup, followup_sent, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'new', ?)`,
+      args: [id, name, email, product, phone || null, summary, JSON.stringify(bottlenecks), score, followup, now]
     });
 
     await client.execute({
@@ -75,7 +75,7 @@ router.get('/export', requireAuth, async (req, res) => {
   try {
     const client = getClient();
     const result = await client.execute('SELECT * FROM leads ORDER BY created_at DESC');
-    const headers = ['id', 'name', 'email', 'product', 'score', 'status', 'summary', 'followup', 'followup_sent', 'created_at'];
+    const headers = ['id', 'name', 'email', 'phone', 'product', 'score', 'status', 'summary', 'notes', 'followup', 'followup_sent', 'created_at'];
     const csv = [
       headers.join(','),
       ...result.rows.map(row =>
@@ -122,6 +122,22 @@ router.get('/:id', requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error('Get lead error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PATCH /api/leads/:id/notes — save admin notes (admin)
+router.patch('/:id/notes', requireAuth, async (req, res) => {
+  const { notes } = req.body;
+  try {
+    const client = getClient();
+    await client.execute({
+      sql: 'UPDATE leads SET notes = ? WHERE id = ?',
+      args: [notes || null, req.params.id]
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update notes error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

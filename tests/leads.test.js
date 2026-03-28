@@ -61,3 +61,46 @@ describe('GET /api/leads', () => {
     expect(Array.isArray(res.body)).toBe(true);
   });
 });
+
+describe('POST /api/leads with phone', () => {
+  test('creates lead with optional phone field', async () => {
+    const res = await request(app).post('/api/leads').send({
+      sessionId: 'session-123',
+      name: 'Jane Doe',
+      email: 'jane@test.com',
+      product: 'ai_service',
+      phone: '+971 50 123 4567'
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('id');
+  });
+
+  test('creates lead without phone field (backward compatible)', async () => {
+    const res = await request(app).post('/api/leads').send({
+      sessionId: 'session-123',
+      name: 'Jane Doe',
+      email: 'jane@test.com',
+      product: 'ai_service'
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('id');
+  });
+});
+
+describe('PATCH /api/leads/:id/notes', () => {
+  test('returns 401 without auth token', async () => {
+    const res = await request(app)
+      .patch('/api/leads/test-id/notes')
+      .send({ notes: 'Some notes' });
+    expect(res.status).toBe(401);
+  });
+
+  test('saves notes and returns success', async () => {
+    const res = await request(app)
+      .patch('/api/leads/test-id/notes')
+      .set('Authorization', 'Bearer test-token')
+      .send({ notes: 'Called on Friday, interested in AI chatbot' });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+});
