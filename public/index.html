@@ -280,6 +280,21 @@
       flex-shrink: 0;
     }
 
+    /* ── Hero Grid ── */
+    .dvp-hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .dvp-hero-image {
+      width: 100%;
+      max-width: 520px;
+      height: auto;
+      border-radius: var(--dvp-radius);
+    }
+
     /* ── Problem ── */
     .dvp-problem {
       background: var(--dvp-gray-50);
@@ -762,6 +777,14 @@
         grid-template-columns: 1fr;
       }
 
+      .dvp-hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dvp-hero-image-col {
+        display: none;
+      }
+
       .dvp-nav-links { display: none; }
 
       .dvp-heading { font-size: 2rem; }
@@ -829,10 +852,15 @@
       }
 
       .dvp-chat-panel {
-        width: calc(100% - 24px);
-        right: 12px;
-        bottom: 84px;
-        height: 480px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        z-index: 1001;
       }
 
       .dvp-chat-toggle {
@@ -862,34 +890,41 @@
   <!-- 1. Hero -->
   <section class="dvp-hero">
     <div class="dvp-wrap">
-      <p class="dvp-section-label">AI-Powered Business Solutions</p>
-      <h1 class="dvp-hero-headline">
-        Your business runs on manual processes. <span class="dvp-blue-span">It doesn't have to.</span>
-      </h1>
-      <p class="dvp-hero-sub">
-        3D Visual Pro builds AI automation, high-converting websites, and digital advertising strategies for businesses ready to grow. Managed from Dubai, delivered worldwide.
-      </p>
-      <div class="dvp-stats-bar">
-        <div class="dvp-stat">
-          <div class="dvp-stat-value">60s</div>
-          <div class="dvp-stat-label">AI response time</div>
+      <div class="dvp-hero-grid">
+        <div class="dvp-hero-content">
+          <p class="dvp-section-label">AI-Powered Business Solutions</p>
+          <h1 class="dvp-hero-headline">
+            Your business runs on manual processes. <span class="dvp-blue-span">It doesn't have to.</span>
+          </h1>
+          <p class="dvp-hero-sub">
+            3D Visual Pro builds AI automation, high-converting websites, and digital advertising strategies for businesses ready to grow. Managed from Dubai, delivered worldwide.
+          </p>
+          <div class="dvp-stats-bar">
+            <div class="dvp-stat">
+              <div class="dvp-stat-value">60s</div>
+              <div class="dvp-stat-label">AI response time</div>
+            </div>
+            <div class="dvp-stat">
+              <div class="dvp-stat-value">24/7</div>
+              <div class="dvp-stat-label">Lead capture</div>
+            </div>
+            <div class="dvp-stat">
+              <div class="dvp-stat-value">80%</div>
+              <div class="dvp-stat-label">Refund guarantee</div>
+            </div>
+          </div>
+          <div class="dvp-hero-ctas">
+            <button class="dvp-btn dvp-btn-primary" onclick="toggleWidget()">Talk to Our AI Assistant</button>
+            <a href="#dvp-services" class="dvp-btn dvp-btn-outline">See Our Services</a>
+          </div>
+          <div class="dvp-guarantee">
+            <svg class="dvp-guarantee-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            80% Money-Back Guarantee on Setup Fee -- We Refund Our Full Margin
+          </div>
         </div>
-        <div class="dvp-stat">
-          <div class="dvp-stat-value">24/7</div>
-          <div class="dvp-stat-label">Lead capture</div>
+        <div class="dvp-hero-image-col">
+          <img class="dvp-hero-image" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80" alt="AI-powered business analytics dashboard" />
         </div>
-        <div class="dvp-stat">
-          <div class="dvp-stat-value">80%</div>
-          <div class="dvp-stat-label">Refund guarantee</div>
-        </div>
-      </div>
-      <div class="dvp-hero-ctas">
-        <button class="dvp-btn dvp-btn-primary" onclick="toggleWidget()">Talk to Our AI Assistant</button>
-        <a href="#dvp-services" class="dvp-btn dvp-btn-outline">See Our Services</a>
-      </div>
-      <div class="dvp-guarantee">
-        <svg class="dvp-guarantee-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-        80% Money-Back Guarantee on Setup Fee
       </div>
     </div>
   </section>
@@ -1069,7 +1104,7 @@
         <div class="dvp-why-card">
           <svg class="dvp-why-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
           <h3 class="dvp-why-title">80% refund guarantee</h3>
-          <p class="dvp-why-desc">We put our money where our mouth is. If we do not deliver on the agreed scope, you get 80% of your setup fee back. No questions.</p>
+          <p class="dvp-why-desc">The 80% we refund represents our complete margin and team incentives -- everything we would have earned. The remaining 20% (or less) covers only the third-party infrastructure costs we've already paid on your behalf: AI models, database hosting, server costs, and other tools. You don't pay for work that doesn't deliver.</p>
         </div>
       </div>
     </div>
@@ -1209,23 +1244,7 @@
     }
 
     async function sendGreeting() {
-      addLoader();
-      try {
-        var res = await fetch(API_BASE + '/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: null, message: 'Hello' })
-        });
-        var data = await res.json();
-        removeLoader();
-        if (!res.ok) throw new Error(data.error || 'Request failed');
-        sessionId = data.sessionId;
-        if (data.product) detectedProduct = data.product;
-        addMessage('assistant', data.reply);
-      } catch (err) {
-        removeLoader();
-        addMessage('assistant', 'Welcome to 3D Visual Pro. How can we help you today?');
-      }
+      addMessage('assistant', "Hey there! Welcome to 3D Visual Pro. Let's chat about what brought you here.");
     }
 
     async function sendMessage() {
@@ -1301,6 +1320,27 @@
       div.textContent = str;
       return div.innerHTML;
     }
+
+    // Auto-open widget after 5 seconds or 30% scroll
+    let autoOpened = false;
+    function autoOpenWidget() {
+      if (autoOpened) return;
+      autoOpened = true;
+      var panel = document.getElementById('dvp-chat-panel');
+      if (!panel.classList.contains('dvp-chat-open')) {
+        toggleWidget();
+      }
+    }
+
+    setTimeout(autoOpenWidget, 5000);
+
+    window.addEventListener('scroll', function() {
+      if (autoOpened) return;
+      var scrollPercent = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+      if (scrollPercent > 0.3) {
+        autoOpenWidget();
+      }
+    });
   </script>
 
 </body>
