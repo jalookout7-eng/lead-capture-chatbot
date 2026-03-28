@@ -31,6 +31,19 @@ async function initDb() {
   for (const stmt of statements) {
     await client.execute(stmt);
   }
+
+  // Add new columns for v2 (safe to re-run — ignores if column exists)
+  const alterStatements = [
+    'ALTER TABLE leads ADD COLUMN phone TEXT',
+    'ALTER TABLE leads ADD COLUMN notes TEXT',
+  ];
+  for (const stmt of alterStatements) {
+    try {
+      await client.execute(stmt);
+    } catch (err) {
+      // Column already exists — safe to ignore
+    }
+  }
 }
 
 module.exports = { getClient, initDb };

@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS leads (
   name            TEXT NOT NULL,
   email           TEXT NOT NULL,
   product         TEXT NOT NULL,
+  phone           TEXT,
+  notes           TEXT,
   summary         TEXT,
   bottlenecks     TEXT,
   score           TEXT DEFAULT 'cold',
