@@ -134,6 +134,26 @@ Phone field added to chatbot capture form (landing page and widget). Optional, f
 
 ---
 
+## v2.1 — Revisions & Mission Control Feed (COMPLETE)
+
+Built 2026-03-28 (same day as v2). Addresses user feedback from live testing.
+
+### Landing Page Revisions
+- **Hero two-column layout** — added a business/AI image on the right side to fill the empty space (hides on mobile)
+- **Warm chat greeting** — replaced cold AI-generated greeting with static welcome: "Hey there! Welcome to 3D Visual Pro. Let's chat about what brought you here." First API call now happens on the user's first message.
+- **Mobile chatbot full-screen** — on mobile (<700px), the chat widget goes full-screen (position fixed, inset 0) to avoid keyboard overlap
+- **Guarantee wording** — clarified that the 80% refund is the team's full margin and incentives; the 20% covers third-party infrastructure costs (AI, database, hosting)
+- **Auto-open widget** — chatbot opens automatically after 5 seconds on page or when user scrolls past 30% (whichever comes first, triggers once)
+
+### Admin Dashboard Fixes
+- **Stats bug fix (root cause)** — dashboard was fetching `/api/stats` and `/api/export` but the correct URLs are `/api/leads/stats` and `/api/leads/export` (routes are mounted under `/api/leads` in Express). Fixed both URLs.
+- **Mission Control Feed** — new always-visible section at the bottom of the dashboard with three cards:
+  - **Daily Fuel** — rotating motivational quote (30 quotes, changes daily) covering discipline, business, tech, and execution
+  - **Market Pulse** — live BTC, ETH prices (CoinGecko API) and NVIDIA stock (Yahoo Finance) with 24hr % change, green/red coloring
+  - **AI Intel** — latest AI headlines from TechCrunch AI category (covers OpenAI, Anthropic, DeepSeek, etc.), links open in new tabs
+
+---
+
 ## Privacy Architecture
 
 **Core principle:** No third-party CRMs. All lead data stays under the team's direct control.
