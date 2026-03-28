@@ -3,72 +3,1187 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>John's AI Services — Let's Talk</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>3D Visual Pro — AI-Powered Business Solutions</title>
+  <meta name="description" content="3D Visual Pro delivers AI automation, modern websites, digital advertising, and business consultancy from Dubai. Talk to our AI assistant now." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --dvp-blue: #007bff;
+      --dvp-blue-hover: #339cff;
+      --dvp-dark: #1a1a2e;
+      --dvp-green: #00c853;
+      --dvp-white: #ffffff;
+      --dvp-gray-50: #f8f9fa;
+      --dvp-gray-100: #e9ecef;
+      --dvp-gray-200: #dee2e6;
+      --dvp-gray-500: #6c757d;
+      --dvp-gray-700: #495057;
+      --dvp-gray-900: #212529;
+      --dvp-font-heading: 'Montserrat', sans-serif;
+      --dvp-font-body: 'Plus Jakarta Sans', sans-serif;
+      --dvp-radius: 12px;
+      --dvp-radius-sm: 8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--dvp-font-body);
+      font-weight: 400;
+      color: var(--dvp-gray-900);
+      background: var(--dvp-white);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Utility ── */
+    .dvp-wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    .dvp-section {
+      padding: 96px 0;
+    }
+
+    .dvp-section-label {
+      font-family: var(--dvp-font-body);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--dvp-blue);
+      margin-bottom: 12px;
+    }
+
+    .dvp-heading {
+      font-family: var(--dvp-font-heading);
+      font-weight: 700;
+      font-size: 2.5rem;
+      line-height: 1.2;
+      color: var(--dvp-gray-900);
+      margin-bottom: 20px;
+    }
+
+    .dvp-subtext {
+      font-size: 1.1rem;
+      color: var(--dvp-gray-500);
+      max-width: 640px;
+    }
+
+    .dvp-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--dvp-font-body);
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: var(--dvp-radius-sm);
+      padding: 14px 28px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      text-decoration: none;
+    }
+
+    .dvp-btn:hover { transform: translateY(-1px); }
+
+    .dvp-btn-primary {
+      background: var(--dvp-blue);
+      color: var(--dvp-white);
+    }
+    .dvp-btn-primary:hover { background: var(--dvp-blue-hover); }
+
+    .dvp-btn-outline {
+      background: transparent;
+      color: var(--dvp-blue);
+      border: 2px solid var(--dvp-blue);
+    }
+    .dvp-btn-outline:hover {
+      background: var(--dvp-blue);
+      color: var(--dvp-white);
+    }
+
+    .dvp-btn-white {
+      background: var(--dvp-white);
+      color: var(--dvp-dark);
+    }
+    .dvp-btn-white:hover { background: var(--dvp-gray-100); }
+
+    .dvp-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .dvp-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .dvp-card {
+      background: var(--dvp-white);
+      border: 1px solid var(--dvp-gray-200);
+      border-radius: var(--dvp-radius);
+      padding: 32px;
+      transition: box-shadow 0.2s, transform 0.15s;
+    }
+
+    .dvp-card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .dvp-blue-span { color: var(--dvp-blue); }
+
+    /* ── Nav ── */
+    .dvp-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--dvp-gray-100);
+    }
+
+    .dvp-nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .dvp-nav-brand {
+      font-family: var(--dvp-font-heading);
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: var(--dvp-dark);
+      text-decoration: none;
+    }
+
+    .dvp-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .dvp-nav-links a {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--dvp-gray-700);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .dvp-nav-links a:hover { color: var(--dvp-blue); }
+
+    .dvp-nav-cta {
+      background: var(--dvp-blue);
+      color: var(--dvp-white) !important;
+      padding: 8px 20px;
+      border-radius: var(--dvp-radius-sm);
+      transition: background 0.2s;
+    }
+
+    .dvp-nav-cta:hover { background: var(--dvp-blue-hover); color: var(--dvp-white) !important; }
+
+    /* ── Hero ── */
+    .dvp-hero {
+      padding: 160px 0 96px;
+      background: var(--dvp-white);
+    }
+
+    .dvp-hero-headline {
+      font-family: var(--dvp-font-heading);
+      font-weight: 800;
+      font-size: 3.2rem;
+      line-height: 1.15;
+      color: var(--dvp-gray-900);
+      margin-bottom: 24px;
+      max-width: 720px;
+    }
+
+    .dvp-hero-sub {
+      font-size: 1.15rem;
+      color: var(--dvp-gray-500);
+      max-width: 600px;
+      margin-bottom: 36px;
+      line-height: 1.7;
+    }
+
+    .dvp-hero-ctas {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+
+    .dvp-stats-bar {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--dvp-gray-200);
+      border-radius: var(--dvp-radius);
+      overflow: hidden;
+      margin-bottom: 32px;
+      max-width: 640px;
+    }
+
+    .dvp-stat {
+      flex: 1;
+      text-align: center;
+      padding: 20px 16px;
+    }
+
+    .dvp-stat + .dvp-stat {
+      border-left: 1px solid var(--dvp-gray-200);
+    }
+
+    .dvp-stat-value {
+      font-family: var(--dvp-font-heading);
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: var(--dvp-blue);
+      margin-bottom: 4px;
+    }
+
+    .dvp-stat-label {
+      font-size: 0.8rem;
+      color: var(--dvp-gray-500);
+    }
+
+    .dvp-guarantee {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--dvp-gray-50);
+      border: 1px solid var(--dvp-green);
+      border-radius: var(--dvp-radius-sm);
+      padding: 12px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--dvp-gray-900);
+    }
+
+    .dvp-guarantee-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--dvp-green);
+      flex-shrink: 0;
+    }
+
+    /* ── Problem ── */
+    .dvp-problem {
+      background: var(--dvp-gray-50);
+    }
+
+    .dvp-problem-card {
+      background: var(--dvp-white);
+      border: 1px solid var(--dvp-gray-200);
+      border-radius: var(--dvp-radius);
+      padding: 32px;
+      transition: box-shadow 0.2s, transform 0.15s;
+    }
+
+    .dvp-problem-card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .dvp-problem-icon {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 16px;
+      color: var(--dvp-blue);
+    }
+
+    .dvp-problem-title {
+      font-family: var(--dvp-font-heading);
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+
+    .dvp-problem-desc {
+      font-size: 0.95rem;
+      color: var(--dvp-gray-500);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .dvp-stat-badge {
+      display: inline-block;
+      background: #fff0f0;
+      color: #d32f2f;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid #ffd6d6;
+    }
+
+    /* ── Services ── */
+    .dvp-service-card {
+      background: var(--dvp-white);
+      border: 1px solid var(--dvp-gray-200);
+      border-radius: var(--dvp-radius);
+      padding: 36px 32px;
+      transition: box-shadow 0.2s, transform 0.15s;
+    }
+
+    .dvp-service-card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .dvp-service-number {
+      font-family: var(--dvp-font-body);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--dvp-blue);
+      margin-bottom: 12px;
+    }
+
+    .dvp-service-title {
+      font-family: var(--dvp-font-heading);
+      font-weight: 700;
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+    }
+
+    .dvp-service-desc {
+      font-size: 0.95rem;
+      color: var(--dvp-gray-500);
+      line-height: 1.6;
+    }
+
+    /* ── How It Works ── */
+    .dvp-process {
+      background: var(--dvp-gray-50);
+    }
+
+    .dvp-process-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 40px;
+      background: var(--dvp-white);
+      border-radius: var(--dvp-radius);
+      overflow: hidden;
+      border: 1px solid var(--dvp-gray-200);
+    }
+
+    .dvp-process-table th {
+      font-family: var(--dvp-font-body);
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--dvp-gray-500);
+      text-align: left;
+      padding: 16px 24px;
+      background: var(--dvp-gray-50);
+      border-bottom: 1px solid var(--dvp-gray-200);
+    }
+
+    .dvp-process-table td {
+      padding: 20px 24px;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--dvp-gray-100);
+      vertical-align: top;
+    }
+
+    .dvp-process-table tr:last-child td { border-bottom: none; }
+
+    .dvp-process-phase {
+      font-weight: 600;
+      color: var(--dvp-gray-900);
+    }
+
+    .dvp-process-timeline {
+      font-weight: 600;
+      color: var(--dvp-blue);
+    }
+
+    .dvp-process-who {
+      color: var(--dvp-gray-500);
+    }
+
+    .dvp-process-cards { display: none; }
+
+    /* ── Why Choose Us ── */
+    .dvp-why-card {
+      background: var(--dvp-white);
+      border: 1px solid var(--dvp-gray-200);
+      border-radius: var(--dvp-radius);
+      padding: 36px 32px;
+      transition: box-shadow 0.2s, transform 0.15s;
+    }
+
+    .dvp-why-card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .dvp-why-icon {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 16px;
+      color: var(--dvp-blue);
+    }
+
+    .dvp-why-title {
+      font-family: var(--dvp-font-heading);
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    .dvp-why-desc {
+      font-size: 0.95rem;
+      color: var(--dvp-gray-500);
+      line-height: 1.6;
+    }
+
+    /* ── Team ── */
+    .dvp-team {
+      background: var(--dvp-gray-50);
+    }
+
+    .dvp-team-card {
+      background: var(--dvp-white);
+      border: 1px solid var(--dvp-gray-200);
+      border-radius: var(--dvp-radius);
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.15s;
+    }
+
+    .dvp-team-card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .dvp-team-photo {
+      width: 100%;
+      height: 280px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .dvp-team-info {
+      padding: 24px;
+    }
+
+    .dvp-team-name {
+      font-family: var(--dvp-font-heading);
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+    }
+
+    .dvp-team-role {
+      font-size: 0.9rem;
+      color: var(--dvp-gray-500);
+    }
+
+    /* ── Final CTA ── */
+    .dvp-cta-section {
+      background: var(--dvp-dark);
+      padding: 96px 0;
+      text-align: center;
+    }
+
+    .dvp-cta-section .dvp-heading {
+      color: var(--dvp-white);
+    }
+
+    .dvp-cta-section .dvp-subtext {
+      color: rgba(255,255,255,0.6);
+      margin: 0 auto 36px;
+    }
+
+    /* ── Footer ── */
+    .dvp-footer {
+      background: var(--dvp-dark);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 24px 0;
+      text-align: center;
+    }
+
+    .dvp-footer-text {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ── Floating Chatbot Widget ── */
+    .dvp-chat-toggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--dvp-blue);
+      color: var(--dvp-white);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,123,255,0.35);
+      transition: background 0.2s, transform 0.15s;
+      animation: dvpPulse 2s ease-in-out 3;
+    }
+
+    .dvp-chat-toggle:hover {
+      background: var(--dvp-blue-hover);
+      transform: scale(1.05);
+    }
+
+    .dvp-chat-toggle svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    @keyframes dvpPulse {
+      0%, 100% { box-shadow: 0 4px 20px rgba(0,123,255,0.35); }
+      50% { box-shadow: 0 4px 30px rgba(0,123,255,0.6); }
+    }
+
+    .dvp-chat-panel {
+      position: fixed;
+      bottom: 92px;
+      right: 24px;
+      z-index: 1001;
+      width: 380px;
+      height: 520px;
+      background: var(--dvp-white);
+      border-radius: 16px;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.15);
+      border: 1px solid var(--dvp-gray-200);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .dvp-chat-panel.dvp-chat-open {
+      display: flex;
+    }
+
+    .dvp-chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--dvp-blue);
+      color: var(--dvp-white);
+    }
+
+    .dvp-chat-header-title {
+      font-family: var(--dvp-font-heading);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .dvp-chat-close {
+      background: none;
+      border: none;
+      color: var(--dvp-white);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+
+    .dvp-chat-close:hover { opacity: 1; }
+
+    .dvp-chat-close svg { width: 18px; height: 18px; }
+
+    .dvp-chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .dvp-msg-row { display: flex; }
+    .dvp-msg-row-user { justify-content: flex-end; }
+    .dvp-msg-row-assistant { justify-content: flex-start; }
+
+    .dvp-msg-bubble {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
+    .dvp-msg-user {
+      background: var(--dvp-blue);
+      color: var(--dvp-white);
+      border-bottom-right-radius: 4px;
+    }
+
+    .dvp-msg-assistant {
+      background: var(--dvp-gray-50);
+      color: var(--dvp-gray-900);
+      border: 1px solid var(--dvp-gray-100);
+      border-bottom-left-radius: 4px;
+    }
+
+    .dvp-chat-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--dvp-gray-100);
+      background: var(--dvp-white);
+    }
+
+    .dvp-chat-input {
+      flex: 1;
+      border: 1px solid var(--dvp-gray-200);
+      border-radius: var(--dvp-radius-sm);
+      padding: 10px 14px;
+      font-family: var(--dvp-font-body);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .dvp-chat-input:focus { border-color: var(--dvp-blue); }
+
+    .dvp-chat-send {
+      background: var(--dvp-blue);
+      color: var(--dvp-white);
+      border: none;
+      border-radius: var(--dvp-radius-sm);
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+
+    .dvp-chat-send:hover { background: var(--dvp-blue-hover); }
+
+    .dvp-capture-form {
+      display: none;
+      padding: 16px;
+      border-top: 1px solid var(--dvp-gray-100);
+      background: var(--dvp-gray-50);
+    }
+
+    .dvp-capture-form.dvp-capture-visible {
+      display: block;
+    }
+
+    .dvp-capture-label {
+      font-size: 0.85rem;
+      color: var(--dvp-gray-500);
+      margin-bottom: 10px;
+    }
+
+    .dvp-capture-input {
+      width: 100%;
+      border: 1px solid var(--dvp-gray-200);
+      border-radius: var(--dvp-radius-sm);
+      padding: 9px 12px;
+      font-family: var(--dvp-font-body);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .dvp-capture-input:focus { border-color: var(--dvp-blue); }
+
+    .dvp-capture-submit {
+      width: 100%;
+      background: var(--dvp-blue);
+      color: var(--dvp-white);
+      border: none;
+      border-radius: var(--dvp-radius-sm);
+      padding: 10px;
+      font-family: var(--dvp-font-body);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.2s;
+    }
+
+    .dvp-capture-submit:hover { background: var(--dvp-blue-hover); }
+
+    .dvp-capture-confirm {
+      text-align: center;
+      padding: 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--dvp-green);
+    }
+
+    .dvp-loader-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--dvp-gray-500);
+      animation: dvpDotBounce 1.2s infinite;
+      margin-right: 4px;
+    }
+
+    .dvp-loader-dot:nth-child(2) { animation-delay: 0.2s; }
+    .dvp-loader-dot:nth-child(3) { animation-delay: 0.4s; margin-right: 0; }
+
+    @keyframes dvpDotBounce {
+      0%, 80%, 100% { opacity: 0.3; }
+      40% { opacity: 1; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .dvp-grid-2,
+      .dvp-grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .dvp-nav-links { display: none; }
+
+      .dvp-heading { font-size: 2rem; }
+
+      .dvp-hero-headline { font-size: 2.4rem; }
+    }
+
+    @media (max-width: 700px) {
+      .dvp-wrap { padding: 0 20px; }
+
+      .dvp-section { padding: 64px 0; }
+
+      .dvp-hero { padding: 120px 0 64px; }
+
+      .dvp-hero-headline { font-size: 1.9rem; }
+
+      .dvp-stats-bar {
+        flex-direction: column;
+      }
+
+      .dvp-stat + .dvp-stat {
+        border-left: none;
+        border-top: 1px solid var(--dvp-gray-200);
+      }
+
+      .dvp-hero-ctas {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .dvp-hero-ctas .dvp-btn { text-align: center; }
+
+      .dvp-process-table-wrap { display: none; }
+      .dvp-process-cards { display: flex; flex-direction: column; gap: 16px; margin-top: 32px; }
+
+      .dvp-process-card-mobile {
+        background: var(--dvp-white);
+        border: 1px solid var(--dvp-gray-200);
+        border-radius: var(--dvp-radius);
+        padding: 24px;
+      }
+
+      .dvp-process-card-mobile-phase {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 4px;
+      }
+
+      .dvp-process-card-mobile-timeline {
+        font-weight: 600;
+        color: var(--dvp-blue);
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+      }
+
+      .dvp-process-card-mobile-desc {
+        font-size: 0.9rem;
+        color: var(--dvp-gray-500);
+        margin-bottom: 6px;
+      }
+
+      .dvp-process-card-mobile-who {
+        font-size: 0.8rem;
+        color: var(--dvp-gray-500);
+      }
+
+      .dvp-chat-panel {
+        width: calc(100% - 24px);
+        right: 12px;
+        bottom: 84px;
+        height: 480px;
+      }
+
+      .dvp-chat-toggle {
+        right: 16px;
+        bottom: 16px;
+      }
+
+      .dvp-team-photo { height: 220px; }
+    }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans">
+<body>
 
-  <!-- Header -->
-  <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-    <span class="font-bold text-gray-900 text-lg">John · AI Services</span>
-    <span class="text-sm text-gray-400">Privacy-first · No data leaks</span>
-  </header>
-
-  <!-- Main: two-column on desktop, stacked on mobile -->
-  <main class="max-w-6xl mx-auto px-4 py-12 flex flex-col lg:flex-row gap-12 items-start">
-
-    <!-- Left: pitch -->
-    <section class="flex-1">
-      <h1 class="text-4xl font-bold text-gray-900 leading-tight mb-4">
-        AI systems that work.<br/>Data that stays yours.
-      </h1>
-      <p class="text-gray-500 text-lg mb-6">
-        I build custom AI chatbots, lead capture systems, and automation tools for businesses that take their data seriously.
-      </p>
-      <ul class="space-y-2 text-gray-600">
-        <li>✦ AI chatbots &amp; lead capture systems</li>
-        <li>✦ Modern websites &amp; landing pages — delivered in 1 day</li>
-        <li>✦ Real Estate Administration Handbook</li>
-        <li>✦ No Zapier. No CRMs. Your data stays private.</li>
+  <!-- Nav -->
+  <nav class="dvp-nav">
+    <div class="dvp-wrap dvp-nav-inner">
+      <a href="#" class="dvp-nav-brand">3D Visual Pro</a>
+      <ul class="dvp-nav-links">
+        <li><a href="#dvp-services">Services</a></li>
+        <li><a href="#dvp-process">How It Works</a></li>
+        <li><a href="#dvp-team">Team</a></li>
+        <li><a href="#" class="dvp-nav-cta" onclick="toggleWidget(); return false;">Talk to AI</a></li>
       </ul>
-    </section>
+    </div>
+  </nav>
 
-    <!-- Right: chatbot panel -->
-    <section class="w-full lg:w-96 bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col overflow-hidden" style="height:520px">
-      <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-        <div class="w-2 h-2 rounded-full bg-green-400"></div>
-        <span class="font-semibold text-gray-800 text-sm">Chat with me</span>
+  <!-- 1. Hero -->
+  <section class="dvp-hero">
+    <div class="dvp-wrap">
+      <p class="dvp-section-label">AI-Powered Business Solutions</p>
+      <h1 class="dvp-hero-headline">
+        Your business runs on manual processes. <span class="dvp-blue-span">It doesn't have to.</span>
+      </h1>
+      <p class="dvp-hero-sub">
+        3D Visual Pro builds AI automation, high-converting websites, and digital advertising strategies for businesses ready to grow. Managed from Dubai, delivered worldwide.
+      </p>
+      <div class="dvp-stats-bar">
+        <div class="dvp-stat">
+          <div class="dvp-stat-value">60s</div>
+          <div class="dvp-stat-label">AI response time</div>
+        </div>
+        <div class="dvp-stat">
+          <div class="dvp-stat-value">24/7</div>
+          <div class="dvp-stat-label">Lead capture</div>
+        </div>
+        <div class="dvp-stat">
+          <div class="dvp-stat-value">80%</div>
+          <div class="dvp-stat-label">Refund guarantee</div>
+        </div>
+      </div>
+      <div class="dvp-hero-ctas">
+        <button class="dvp-btn dvp-btn-primary" onclick="toggleWidget()">Talk to Our AI Assistant</button>
+        <a href="#dvp-services" class="dvp-btn dvp-btn-outline">See Our Services</a>
+      </div>
+      <div class="dvp-guarantee">
+        <svg class="dvp-guarantee-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        80% Money-Back Guarantee on Setup Fee
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Problem -->
+  <section class="dvp-section dvp-problem">
+    <div class="dvp-wrap">
+      <p class="dvp-section-label">The Problem</p>
+      <h2 class="dvp-heading">Your leads are disappearing. Here's why.</h2>
+      <div class="dvp-grid-2" style="margin-top: 40px;">
+        <!-- Card 1 -->
+        <div class="dvp-problem-card">
+          <svg class="dvp-problem-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <h3 class="dvp-problem-title">Slow Lead Response</h3>
+          <p class="dvp-problem-desc">Leads go cold in minutes, not hours. Every minute you wait, your competitor replies first.</p>
+          <span class="dvp-stat-badge">90% cold after 5 min</span>
+        </div>
+        <!-- Card 2 -->
+        <div class="dvp-problem-card">
+          <svg class="dvp-problem-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <h3 class="dvp-problem-title">No Lead Tracking</h3>
+          <p class="dvp-problem-desc">Spreadsheets, lost WhatsApp messages, no pipeline. You have no idea where your leads stand.</p>
+          <span class="dvp-stat-badge">Zero visibility</span>
+        </div>
+        <!-- Card 3 -->
+        <div class="dvp-problem-card">
+          <svg class="dvp-problem-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <h3 class="dvp-problem-title">No Digital Ad Strategy</h3>
+          <p class="dvp-problem-desc">Relying on referrals alone limits your reach. You are missing an entire online market.</p>
+          <span class="dvp-stat-badge">Untapped online market</span>
+        </div>
+        <!-- Card 4 -->
+        <div class="dvp-problem-card">
+          <svg class="dvp-problem-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          <h3 class="dvp-problem-title">No Automation</h3>
+          <p class="dvp-problem-desc">Every response is manual and inconsistent. After hours, your business goes silent.</p>
+          <span class="dvp-stat-badge">Zero leads after hours</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Services -->
+  <section class="dvp-section" id="dvp-services">
+    <div class="dvp-wrap">
+      <p class="dvp-section-label">Our Services</p>
+      <h2 class="dvp-heading">4 services. Managed from Dubai.</h2>
+      <div class="dvp-grid-2" style="margin-top: 40px;">
+        <div class="dvp-service-card">
+          <p class="dvp-service-number">Service 01</p>
+          <h3 class="dvp-service-title">AI Chatbots &amp; Automation</h3>
+          <p class="dvp-service-desc">24/7 lead capture, qualification, and automated follow-up. Your AI assistant works while you sleep, engaging every visitor and routing hot leads to your team instantly.</p>
+        </div>
+        <div class="dvp-service-card">
+          <p class="dvp-service-number">Service 02</p>
+          <h3 class="dvp-service-title">Modern Websites &amp; Landing Pages</h3>
+          <p class="dvp-service-desc">Fast-build, conversion-focused websites designed to turn traffic into leads. Mobile-first, performance-optimised, and built to match your brand.</p>
+        </div>
+        <div class="dvp-service-card">
+          <p class="dvp-service-number">Service 03</p>
+          <h3 class="dvp-service-title">Paid Digital Advertising</h3>
+          <p class="dvp-service-desc">Fully managed campaigns across Meta, Google, and LinkedIn. We handle targeting, creatives, and budget optimisation so you get leads, not just impressions.</p>
+        </div>
+        <div class="dvp-service-card">
+          <p class="dvp-service-number">Service 04</p>
+          <h3 class="dvp-service-title">Business Consultancy</h3>
+          <p class="dvp-service-desc">Audit-first approach to your operations. We identify what is broken, build a strategy, and implement it with you -- not just hand you a PDF and walk away.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. How It Works -->
+  <section class="dvp-section dvp-process" id="dvp-process">
+    <div class="dvp-wrap">
+      <p class="dvp-section-label">How It Works</p>
+      <h2 class="dvp-heading">From audit to active leads in 30 days.</h2>
+
+      <!-- Desktop table -->
+      <div class="dvp-process-table-wrap">
+        <table class="dvp-process-table">
+          <thead>
+            <tr>
+              <th>Phase</th>
+              <th>Timeline</th>
+              <th>What Happens</th>
+              <th>Who</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="dvp-process-phase">Free Strategy Call</td>
+              <td class="dvp-process-timeline">Day 1</td>
+              <td>We learn your business, goals, and current gaps. No cost, no commitment.</td>
+              <td class="dvp-process-who">You + 3D Visual Pro</td>
+            </tr>
+            <tr>
+              <td class="dvp-process-phase">Business Audit</td>
+              <td class="dvp-process-timeline">Days 2 - 7</td>
+              <td>We review your lead flow, digital presence, and operations. You get a clear action plan.</td>
+              <td class="dvp-process-who">3D Visual Pro</td>
+            </tr>
+            <tr>
+              <td class="dvp-process-phase">Fix Gaps &amp; Build</td>
+              <td class="dvp-process-timeline">Weeks 2 - 4</td>
+              <td>We build your systems -- chatbot, website, ad campaigns, automations -- based on audit findings.</td>
+              <td class="dvp-process-who">3D Visual Pro</td>
+            </tr>
+            <tr>
+              <td class="dvp-process-phase">Launch</td>
+              <td class="dvp-process-timeline">Month 2</td>
+              <td>Everything goes live. We monitor performance and fine-tune in real time.</td>
+              <td class="dvp-process-who">3D Visual Pro + You</td>
+            </tr>
+            <tr>
+              <td class="dvp-process-phase">Scale &amp; Optimise</td>
+              <td class="dvp-process-timeline">Month 3+</td>
+              <td>Double down on what works. Scale ad spend, add new automations, expand reach.</td>
+              <td class="dvp-process-who">3D Visual Pro + You</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <!-- Messages -->
-      <div id="messages" class="flex-1 overflow-y-auto px-4 py-4 space-y-3"></div>
-
-      <!-- Capture form (hidden until captureReady) -->
-      <div id="capture-form" class="hidden px-4 py-3 border-t border-gray-100 bg-gray-50">
-        <p class="text-sm text-gray-500 mb-2">To continue, drop your details below:</p>
-        <input id="capture-name" type="text" placeholder="Your name" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-        <input id="capture-email" type="email" placeholder="Your email" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-        <button onclick="submitCapture()" class="w-full bg-indigo-600 text-white text-sm rounded-lg py-2 hover:bg-indigo-700 transition">Send</button>
+      <!-- Mobile cards -->
+      <div class="dvp-process-cards">
+        <div class="dvp-process-card-mobile">
+          <p class="dvp-process-card-mobile-phase">Free Strategy Call</p>
+          <p class="dvp-process-card-mobile-timeline">Day 1</p>
+          <p class="dvp-process-card-mobile-desc">We learn your business, goals, and current gaps. No cost, no commitment.</p>
+          <p class="dvp-process-card-mobile-who">You + 3D Visual Pro</p>
+        </div>
+        <div class="dvp-process-card-mobile">
+          <p class="dvp-process-card-mobile-phase">Business Audit</p>
+          <p class="dvp-process-card-mobile-timeline">Days 2 - 7</p>
+          <p class="dvp-process-card-mobile-desc">We review your lead flow, digital presence, and operations. You get a clear action plan.</p>
+          <p class="dvp-process-card-mobile-who">3D Visual Pro</p>
+        </div>
+        <div class="dvp-process-card-mobile">
+          <p class="dvp-process-card-mobile-phase">Fix Gaps &amp; Build</p>
+          <p class="dvp-process-card-mobile-timeline">Weeks 2 - 4</p>
+          <p class="dvp-process-card-mobile-desc">We build your systems -- chatbot, website, ad campaigns, automations -- based on audit findings.</p>
+          <p class="dvp-process-card-mobile-who">3D Visual Pro</p>
+        </div>
+        <div class="dvp-process-card-mobile">
+          <p class="dvp-process-card-mobile-phase">Launch</p>
+          <p class="dvp-process-card-mobile-timeline">Month 2</p>
+          <p class="dvp-process-card-mobile-desc">Everything goes live. We monitor performance and fine-tune in real time.</p>
+          <p class="dvp-process-card-mobile-who">3D Visual Pro + You</p>
+        </div>
+        <div class="dvp-process-card-mobile">
+          <p class="dvp-process-card-mobile-phase">Scale &amp; Optimise</p>
+          <p class="dvp-process-card-mobile-timeline">Month 3+</p>
+          <p class="dvp-process-card-mobile-desc">Double down on what works. Scale ad spend, add new automations, expand reach.</p>
+          <p class="dvp-process-card-mobile-who">3D Visual Pro + You</p>
+        </div>
       </div>
+    </div>
+  </section>
 
-      <!-- Input -->
-      <div id="input-area" class="px-4 py-3 border-t border-gray-100 flex gap-2">
-        <input id="msg-input" type="text" placeholder="Type a message..." class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" onkeydown="if(event.key==='Enter')sendMessage()" />
-        <button onclick="sendMessage()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition">→</button>
+  <!-- 5. Why Choose Us -->
+  <section class="dvp-section">
+    <div class="dvp-wrap">
+      <p class="dvp-section-label">Why Choose Us</p>
+      <h2 class="dvp-heading">Why businesses choose 3D Visual Pro.</h2>
+      <div class="dvp-grid-3" style="margin-top: 40px;">
+        <div class="dvp-why-card">
+          <svg class="dvp-why-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <h3 class="dvp-why-title">Proven by Dubai's fastest-growing companies</h3>
+          <p class="dvp-why-desc">We work with businesses that are scaling fast and need systems that keep up. Our solutions are built for growth, not just today's problems.</p>
+        </div>
+        <div class="dvp-why-card">
+          <svg class="dvp-why-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          <h3 class="dvp-why-title">Implementation, not consultation</h3>
+          <p class="dvp-why-desc">We do not hand you a strategy deck and disappear. We build, launch, and manage the systems ourselves -- you see results, not reports.</p>
+        </div>
+        <div class="dvp-why-card">
+          <svg class="dvp-why-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <h3 class="dvp-why-title">80% refund guarantee</h3>
+          <p class="dvp-why-desc">We put our money where our mouth is. If we do not deliver on the agreed scope, you get 80% of your setup fee back. No questions.</p>
+        </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+
+  <!-- 6. Team -->
+  <section class="dvp-section dvp-team" id="dvp-team">
+    <div class="dvp-wrap">
+      <p class="dvp-section-label">Who We Are</p>
+      <h2 class="dvp-heading">A Dubai-based team with one focus: your growth.</h2>
+      <div class="dvp-grid-3" style="margin-top: 40px;">
+        <div class="dvp-team-card">
+          <img class="dvp-team-photo" src="https://johnalex081-odpga.wpcomstaging.com/wp-content/uploads/2026/03/Farhan1.jpg" alt="Farhan Rais Satria" />
+          <div class="dvp-team-info">
+            <h3 class="dvp-team-name">Farhan Rais Satria</h3>
+            <p class="dvp-team-role">Digital Marketing &amp; Business Strategy</p>
+          </div>
+        </div>
+        <div class="dvp-team-card">
+          <img class="dvp-team-photo" src="https://johnalex081-odpga.wpcomstaging.com/wp-content/uploads/2026/03/Wassim.jpeg" alt="Wassim Reghis" />
+          <div class="dvp-team-info">
+            <h3 class="dvp-team-name">Wassim Reghis</h3>
+            <p class="dvp-team-role">AI Agents &amp; Marketing Automation</p>
+          </div>
+        </div>
+        <div class="dvp-team-card">
+          <img class="dvp-team-photo" src="https://johnalex081-odpga.wpcomstaging.com/wp-content/uploads/2026/03/John2.jpg" alt="John Alexander" />
+          <div class="dvp-team-info">
+            <h3 class="dvp-team-name">John Alexander</h3>
+            <p class="dvp-team-role">CRM Systems &amp; Client Operations</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Final CTA -->
+  <section class="dvp-cta-section">
+    <div class="dvp-wrap">
+      <h2 class="dvp-heading">Stop guessing. Start converting.</h2>
+      <p class="dvp-subtext">Your competitors are already automating their lead capture. Talk to our AI assistant and find out what 3D Visual Pro can do for your business in 30 days.</p>
+      <button class="dvp-btn dvp-btn-white" onclick="toggleWidget()">Talk to Our AI Assistant</button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="dvp-footer">
+    <div class="dvp-wrap">
+      <p class="dvp-footer-text">3D Visual Pro -- Dubai, UAE. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Floating Chatbot Widget -->
+  <button class="dvp-chat-toggle" id="dvp-chat-toggle" onclick="toggleWidget()" aria-label="Open chat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </button>
+
+  <div class="dvp-chat-panel" id="dvp-chat-panel">
+    <div class="dvp-chat-header">
+      <span class="dvp-chat-header-title">3D Visual Pro</span>
+      <button class="dvp-chat-close" onclick="toggleWidget()" aria-label="Close chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="dvp-chat-messages" id="dvp-chat-messages"></div>
+    <div class="dvp-capture-form" id="dvp-capture-form">
+      <p class="dvp-capture-label">To continue, share your details below:</p>
+      <input id="dvp-capture-name" class="dvp-capture-input" type="text" placeholder="Your name" />
+      <input id="dvp-capture-email" class="dvp-capture-input" type="email" placeholder="Your email" />
+      <input id="dvp-capture-phone" class="dvp-capture-input" type="tel" placeholder="+971 50 123 4567 (optional)" />
+      <button class="dvp-capture-submit" onclick="submitCapture()">Submit</button>
+    </div>
+    <div class="dvp-chat-input-area" id="dvp-chat-input-area">
+      <input id="dvp-msg-input" class="dvp-chat-input" type="text" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()" />
+      <button class="dvp-chat-send" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
 
   <script>
+    const API_BASE = (window.DVP_CHAT_CONFIG && window.DVP_CHAT_CONFIG.apiBase) || '';
+
     let sessionId = null;
     let detectedProduct = 'other';
+    let widgetOpened = false;
+    let greetingSent = false;
+
+    function toggleWidget() {
+      var panel = document.getElementById('dvp-chat-panel');
+      var toggle = document.getElementById('dvp-chat-toggle');
+      var isOpen = panel.classList.contains('dvp-chat-open');
+
+      if (isOpen) {
+        panel.classList.remove('dvp-chat-open');
+        toggle.style.display = 'flex';
+      } else {
+        panel.classList.add('dvp-chat-open');
+        toggle.style.display = 'none';
+        if (!greetingSent) {
+          greetingSent = true;
+          sendGreeting();
+        }
+        var input = document.getElementById('dvp-msg-input');
+        if (input && !input.closest('.dvp-chat-input-area').classList.contains('dvp-hidden')) {
+          input.focus();
+        }
+      }
+    }
 
     function addMessage(role, text) {
-      const container = document.getElementById('messages');
-      const row = document.createElement('div');
-      row.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
-      const bubble = document.createElement('div');
-      bubble.className = `max-w-xs px-4 py-2 rounded-2xl text-sm ${role === 'user' ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`;
+      var container = document.getElementById('dvp-chat-messages');
+      var row = document.createElement('div');
+      row.className = 'dvp-msg-row ' + (role === 'user' ? 'dvp-msg-row-user' : 'dvp-msg-row-assistant');
+      var bubble = document.createElement('div');
+      bubble.className = 'dvp-msg-bubble ' + (role === 'user' ? 'dvp-msg-user' : 'dvp-msg-assistant');
       bubble.textContent = text;
       row.appendChild(bubble);
       container.appendChild(row);
@@ -76,89 +1191,117 @@
     }
 
     function addLoader() {
-      const container = document.getElementById('messages');
-      const div = document.createElement('div');
-      div.id = 'loader';
-      div.className = 'flex justify-start';
-      div.innerHTML = `<div class="bg-gray-100 text-gray-400 px-4 py-2 rounded-2xl text-sm rounded-bl-sm">...</div>`;
-      container.appendChild(div);
+      var container = document.getElementById('dvp-chat-messages');
+      var row = document.createElement('div');
+      row.id = 'dvp-loader';
+      row.className = 'dvp-msg-row dvp-msg-row-assistant';
+      var bubble = document.createElement('div');
+      bubble.className = 'dvp-msg-bubble dvp-msg-assistant';
+      bubble.innerHTML = '<span class="dvp-loader-dot"></span><span class="dvp-loader-dot"></span><span class="dvp-loader-dot"></span>';
+      row.appendChild(bubble);
+      container.appendChild(row);
       container.scrollTop = container.scrollHeight;
     }
 
     function removeLoader() {
-      const loader = document.getElementById('loader');
+      var loader = document.getElementById('dvp-loader');
       if (loader) loader.remove();
     }
 
+    async function sendGreeting() {
+      addLoader();
+      try {
+        var res = await fetch(API_BASE + '/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: null, message: 'Hello' })
+        });
+        var data = await res.json();
+        removeLoader();
+        if (!res.ok) throw new Error(data.error || 'Request failed');
+        sessionId = data.sessionId;
+        if (data.product) detectedProduct = data.product;
+        addMessage('assistant', data.reply);
+      } catch (err) {
+        removeLoader();
+        addMessage('assistant', 'Welcome to 3D Visual Pro. How can we help you today?');
+      }
+    }
+
     async function sendMessage() {
-      const input = document.getElementById('msg-input');
-      const btn = input.nextElementSibling;
-      const message = input.value.trim();
+      var input = document.getElementById('dvp-msg-input');
+      var sendBtn = input.nextElementSibling;
+      var message = input.value.trim();
       if (!message) return;
+
       input.value = '';
       input.disabled = true;
-      btn.disabled = true;
+      sendBtn.disabled = true;
       addMessage('user', message);
       addLoader();
 
       try {
-        const res = await fetch('/api/chat', {
+        var res = await fetch(API_BASE + '/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, message })
+          body: JSON.stringify({ sessionId: sessionId, message: message })
         });
-        const data = await res.json();
+        var data = await res.json();
         removeLoader();
         if (!res.ok) throw new Error(data.error || 'Request failed');
         sessionId = data.sessionId;
         if (data.product) detectedProduct = data.product;
         addMessage('assistant', data.reply);
         if (data.captureReady) {
-          document.getElementById('input-area').classList.add('hidden');
-          document.getElementById('capture-form').classList.remove('hidden');
+          document.getElementById('dvp-chat-input-area').style.display = 'none';
+          document.getElementById('dvp-capture-form').classList.add('dvp-capture-visible');
         }
       } catch (err) {
         removeLoader();
         addMessage('assistant', 'Something went wrong. Please try again.');
       } finally {
         input.disabled = false;
-        btn.disabled = false;
+        sendBtn.disabled = false;
         input.focus();
       }
     }
 
     async function submitCapture() {
-      const name = document.getElementById('capture-name').value.trim();
-      const email = document.getElementById('capture-email').value.trim();
-      if (!name || !email) return alert('Please fill in both fields.');
+      var name = document.getElementById('dvp-capture-name').value.trim();
+      var email = document.getElementById('dvp-capture-email').value.trim();
+      var phone = document.getElementById('dvp-capture-phone').value.trim();
 
-      const captureDiv = document.getElementById('capture-form');
-      captureDiv.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">Analysing your information...</p>';
+      if (!name || !email) {
+        alert('Please fill in your name and email.');
+        return;
+      }
+
+      var captureDiv = document.getElementById('dvp-capture-form');
+      captureDiv.innerHTML = '<p style="text-align:center;padding:16px;font-size:0.9rem;color:#6c757d;">Submitting your details...</p>';
 
       try {
-        const res = await fetch('/api/leads', {
+        var body = { sessionId: sessionId, name: name, email: email, product: detectedProduct };
+        if (phone) body.phone = phone;
+
+        var res = await fetch(API_BASE + '/api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, name, email, product: detectedProduct })
+          body: JSON.stringify(body)
         });
         if (!res.ok) throw new Error('Submission failed');
-        captureDiv.innerHTML = '<p class="text-sm text-indigo-600 text-center py-2 font-medium">Thanks! I\'ll be in touch soon.</p>';
+        captureDiv.innerHTML = '<p class="dvp-capture-confirm">Thanks, ' + escapeText(name) + '! We will be in touch soon.</p>';
+        addMessage('assistant', 'Your details have been received. Our team will reach out shortly.');
       } catch (err) {
-        captureDiv.innerHTML = '<p class="text-sm text-red-500 text-center py-2">Something went wrong. Please refresh and try again.</p>';
+        captureDiv.innerHTML = '<p style="text-align:center;padding:16px;font-size:0.9rem;color:#d32f2f;">Something went wrong. Please refresh and try again.</p>';
       }
     }
 
-    // Kick off conversation on load
-    window.onload = () => {
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: null, message: 'Hello' })
-      }).then(r => r.json()).then(data => {
-        sessionId = data.sessionId;
-        addMessage('assistant', data.reply);
-      });
-    };
+    function escapeText(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
   </script>
+
 </body>
 </html>
