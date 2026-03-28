@@ -1,12 +1,14 @@
 const ai = require('./ai');
 
-const QUALIFIER_PROMPT = `You are analysing a lead conversation. Based on the conversation history provided, return a JSON object with exactly these fields:
+const QUALIFIER_PROMPT = `You are analysing a lead conversation for 3D Visual Pro, a Dubai-based team offering AI automation, modern websites, digital marketing, and business consultancy.
+
+Based on the conversation history provided, return a JSON object with exactly these fields:
 
 {
   "summary": "2-3 sentence summary of who this person is and what they need",
   "bottlenecks": ["bottleneck 1", "bottleneck 2"],
   "score": "hot|warm|cold",
-  "followup": "Personalised follow-up message from John, addressing their specific situation"
+  "followup": "Personalised follow-up message from the 3D Visual Pro team, addressing their specific situation"
 }
 
 Scoring rubric:
