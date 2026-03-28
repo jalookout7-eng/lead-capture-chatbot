@@ -3,195 +3,699 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lead Admin</title>
+  <title>3D Visual Pro — Mission Control</title>
   <link rel="manifest" href="/admin/manifest.json" />
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 min-h-screen font-sans flex">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <!-- Sidebar -->
-  <nav class="w-56 bg-white border-r border-gray-100 min-h-screen flex flex-col py-6 px-4 shrink-0 hidden md:flex">
-    <div class="font-bold text-gray-900 text-base mb-8 px-2">🔐 Lead Admin</div>
-    <button onclick="showTab('overview')" id="nav-overview" class="nav-btn text-left px-3 py-2 rounded-lg text-sm font-medium mb-1">📊 Overview</button>
-    <button onclick="showTab('leads')" id="nav-leads" class="nav-btn text-left px-3 py-2 rounded-lg text-sm font-medium mb-1">👥 Leads</button>
-    <button onclick="showTab('followups')" id="nav-followups" class="nav-btn text-left px-3 py-2 rounded-lg text-sm font-medium mb-1">✉️ Follow-ups</button>
-    <button onclick="showTab('export')" id="nav-export" class="nav-btn text-left px-3 py-2 rounded-lg text-sm font-medium mb-1">⬇️ Export</button>
-  </nav>
-
-  <!-- Mobile nav -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-2 z-50">
-    <button onclick="showTab('overview')" class="text-xs text-gray-500 flex flex-col items-center gap-1">📊<span>Overview</span></button>
-    <button onclick="showTab('leads')" class="text-xs text-gray-500 flex flex-col items-center gap-1">👥<span>Leads</span></button>
-    <button onclick="showTab('followups')" class="text-xs text-gray-500 flex flex-col items-center gap-1">✉️<span>Follow-ups</span></button>
-    <button onclick="showTab('export')" class="text-xs text-gray-500 flex flex-col items-center gap-1">⬇️<span>Export</span></button>
-  </div>
-
-  <!-- Main content -->
-  <main class="flex-1 px-6 py-6 pb-20 md:pb-6 overflow-auto">
-
-    <!-- Overview tab -->
-    <div id="tab-overview" class="tab-content">
-      <h1 class="text-xl font-bold text-gray-900 mb-6">Overview</h1>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
-          <div id="stat-total" class="text-3xl font-bold text-gray-900">—</div>
-          <div class="text-xs text-gray-500 mt-1">Total Leads</div>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
-          <div id="stat-hot" class="text-3xl font-bold text-red-500">—</div>
-          <div class="text-xs text-gray-500 mt-1">🔥 Hot</div>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
-          <div id="stat-warm" class="text-3xl font-bold text-amber-500">—</div>
-          <div class="text-xs text-gray-500 mt-1">🌡️ Warm</div>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
-          <div id="stat-cold" class="text-3xl font-bold text-indigo-400">—</div>
-          <div class="text-xs text-gray-500 mt-1">❄️ Cold</div>
-        </div>
-      </div>
-
-      <!-- Bar chart -->
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <div class="text-sm font-semibold text-gray-700 mb-4">Leads per day</div>
-        <div id="chart" class="flex items-end gap-2 h-32 overflow-x-auto"></div>
-      </div>
-    </div>
-
-    <!-- Leads tab -->
-    <div id="tab-leads" class="tab-content hidden">
-      <h1 class="text-xl font-bold text-gray-900 mb-4">Leads</h1>
-      <input id="leads-search" type="text" placeholder="Search by name or email..." oninput="renderLeads()" class="w-full max-w-sm border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div class="grid grid-cols-4 md:grid-cols-5 gap-2 px-4 py-3 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          <span>Name</span>
-          <span class="hidden md:block">Email</span>
-          <span>Product</span>
-          <span>Score</span>
-          <span>Status</span>
-        </div>
-        <div id="leads-table-body"></div>
-      </div>
-
-      <!-- Lead detail panel -->
-      <div id="lead-detail" class="hidden mt-6 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-        <button onclick="document.getElementById('lead-detail').classList.add('hidden')" class="text-sm text-gray-400 hover:text-gray-600 mb-4">← Back</button>
-        <h2 id="detail-name" class="text-lg font-bold text-gray-900 mb-1"></h2>
-        <p id="detail-email" class="text-sm text-gray-400 mb-4"></p>
-        <div class="mb-4">
-          <div class="text-xs font-semibold text-gray-500 uppercase mb-1">AI Summary</div>
-          <p id="detail-summary" class="text-sm text-gray-700"></p>
-        </div>
-        <div class="mb-4">
-          <div class="text-xs font-semibold text-gray-500 uppercase mb-1">Bottlenecks</div>
-          <ul id="detail-bottlenecks" class="text-sm text-gray-700 list-disc list-inside space-y-1"></ul>
-        </div>
-        <div>
-          <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Conversation</div>
-          <div id="detail-messages" class="space-y-2 max-h-64 overflow-y-auto"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Follow-ups tab -->
-    <div id="tab-followups" class="tab-content hidden">
-      <h1 class="text-xl font-bold text-gray-900 mb-6">Follow-ups</h1>
-      <div id="followups-list" class="space-y-4"></div>
-    </div>
-
-    <!-- Export tab -->
-    <div id="tab-export" class="tab-content hidden">
-      <h1 class="text-xl font-bold text-gray-900 mb-6">Export</h1>
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 max-w-sm">
-        <p class="text-sm text-gray-500 mb-4">Download all leads as a CSV file.</p>
-        <button onclick="downloadCsv()" class="w-full bg-indigo-600 text-white text-sm rounded-lg py-2 hover:bg-indigo-700 transition">⬇️ Download CSV</button>
-      </div>
-    </div>
-
-  </main>
-
-  <script>
-    // --- Auth ---
-    let token = localStorage.getItem('adminToken');
-    if (!token) {
-      token = prompt('Enter your admin token:');
-      if (token) localStorage.setItem('adminToken', token);
+    :root {
+      --bg: #0a0a1a;
+      --card-bg: rgba(0, 255, 200, 0.05);
+      --card-border: rgba(0, 255, 200, 0.15);
+      --accent: #00ffc8;
+      --hot: #ff3232;
+      --warm: #ffb400;
+      --cold: #00ffc8;
+      --text-primary: rgba(255, 255, 255, 0.9);
+      --text-secondary: rgba(255, 255, 255, 0.5);
+      --mono: 'Courier New', monospace;
     }
 
-    const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` });
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-    // --- State ---
-    let allLeads = [];
-    let statsData = null;
+    /* Login overlay */
+    #login-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(10, 10, 26, 0.95);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #login-overlay.hidden { display: none; }
+    .login-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 32px;
+      width: 90%; max-width: 360px;
+      text-align: center;
+    }
+    .login-box h2 {
+      font-size: 18px; margin-bottom: 8px; color: var(--accent);
+    }
+    .login-box p {
+      font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;
+    }
+    .login-box input {
+      width: 100%; padding: 10px 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 8px; color: var(--text-primary);
+      font-size: 14px; margin-bottom: 12px;
+      outline: none;
+    }
+    .login-box input:focus { border-color: var(--accent); }
+    .login-box button {
+      width: 100%; padding: 10px;
+      background: var(--accent); color: #0a0a1a;
+      border: none; border-radius: 8px;
+      font-weight: 600; font-size: 14px; cursor: pointer;
+    }
+    .login-box button:hover { opacity: 0.9; }
 
-    // --- Tab switching ---
-    function showTab(name) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById('tab-' + name).classList.remove('hidden');
-      document.querySelectorAll('.nav-btn').forEach(el => {
-        el.classList.remove('bg-indigo-50', 'text-indigo-700');
-        el.classList.add('text-gray-600');
-      });
-      const btn = document.getElementById('nav-' + name);
-      if (btn) {
-        btn.classList.remove('text-gray-600');
-        btn.classList.add('bg-indigo-50', 'text-indigo-700');
+    /* Desktop layout */
+    .app-wrapper { display: flex; flex: 1; }
+
+    /* Sidebar — desktop */
+    .sidebar {
+      width: 220px; min-height: 100vh;
+      background: rgba(0,0,0,0.3);
+      border-right: 1px solid var(--card-border);
+      padding: 24px 16px;
+      display: flex; flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-title {
+      font-size: 15px; font-weight: 700;
+      color: var(--accent); margin-bottom: 28px; padding: 0 8px;
+      letter-spacing: 0.5px;
+    }
+    .nav-btn {
+      display: block; width: 100%;
+      text-align: left; padding: 10px 12px;
+      border: none; background: none;
+      color: var(--text-secondary);
+      font-size: 13px; font-weight: 500;
+      border-radius: 8px; cursor: pointer;
+      margin-bottom: 2px; transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+    .nav-btn:hover { color: var(--text-primary); background: rgba(0,255,200,0.04); }
+    .nav-btn.active {
+      color: var(--accent);
+      background: rgba(0,255,200,0.08);
+      border-color: var(--card-border);
+    }
+
+    /* Mobile bottom nav */
+    .mobile-nav {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(10,10,26,0.95);
+      border-top: 1px solid var(--card-border);
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    .mobile-nav-inner {
+      display: flex; justify-content: space-around; padding: 8px 0;
+    }
+    .mob-btn {
+      background: none; border: none;
+      color: var(--text-secondary);
+      font-size: 11px; cursor: pointer;
+      padding: 6px 10px; border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .mob-btn.active {
+      color: var(--accent);
+      background: rgba(0,255,200,0.08);
+    }
+
+    /* Main content */
+    .main-content {
+      flex: 1; padding: 28px 32px 28px 32px;
+      overflow-y: auto; min-height: 100vh;
+    }
+
+    /* Tab content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Section heading */
+    .section-title {
+      font-size: 20px; font-weight: 700;
+      margin-bottom: 24px; color: var(--text-primary);
+    }
+
+    /* Stat cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px; text-align: center;
+      transition: box-shadow 0.2s;
+    }
+    .stat-card:hover {
+      box-shadow: 0 0 15px rgba(0,255,200,0.1);
+    }
+    .stat-number {
+      font-family: var(--mono);
+      font-size: 28px; font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .stat-total { color: var(--accent); }
+    .stat-hot { color: var(--hot); }
+    .stat-warm { color: var(--warm); }
+    .stat-cold { color: var(--cold); }
+
+    /* Chart */
+    .chart-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 20px;
+    }
+    .chart-title {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-secondary); margin-bottom: 16px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .chart-area {
+      display: flex; align-items: flex-end; gap: 6px;
+      height: 140px; overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .chart-col {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px; flex-shrink: 0;
+    }
+    .chart-bar {
+      width: 28px; min-height: 4px;
+      border-radius: 3px 3px 0 0;
+      background: linear-gradient(180deg, var(--accent), rgba(0,255,200,0.3));
+      transition: height 0.3s;
+    }
+    .chart-bar:hover { opacity: 0.8; }
+    .chart-date {
+      font-size: 10px; color: var(--text-secondary);
+      font-family: var(--mono);
+    }
+    .chart-empty {
+      font-size: 13px; color: var(--text-secondary);
+      padding: 20px 0;
+    }
+
+    /* Search input */
+    .search-input {
+      width: 100%; max-width: 360px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 8px; color: var(--text-primary);
+      font-size: 13px; margin-bottom: 16px;
+      outline: none;
+    }
+    .search-input::placeholder { color: var(--text-secondary); }
+    .search-input:focus { border-color: var(--accent); }
+
+    /* Leads table */
+    .leads-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .leads-header {
+      display: grid;
+      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr;
+      gap: 8px; padding: 12px 16px;
+      background: rgba(0,255,200,0.03);
+      font-size: 11px; font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .lead-row {
+      display: grid;
+      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr;
+      gap: 8px; padding: 12px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(0,255,200,0.05);
+      cursor: pointer; transition: background 0.15s;
+      align-items: center;
+    }
+    .lead-row:hover { background: rgba(0,255,200,0.04); }
+    .lead-row:last-child { border-bottom: none; }
+    .lead-name { font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lead-email { color: var(--text-secondary); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lead-product { color: var(--text-secondary); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lead-notes-preview { color: var(--text-secondary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Score badge */
+    .score-badge {
+      font-size: 11px; font-weight: 700;
+      font-family: var(--mono);
+      letter-spacing: 0.5px;
+    }
+    .score-hot { color: var(--hot); }
+    .score-warm { color: var(--warm); }
+    .score-cold { color: var(--cold); }
+
+    /* Status select */
+    .status-select {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 11px; padding: 4px 6px;
+      cursor: pointer; outline: none;
+    }
+    .status-select option { background: #1a1a2e; color: var(--text-primary); }
+
+    /* Lead detail panel */
+    .detail-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 24px;
+      margin-top: 20px;
+    }
+    .detail-panel.hidden { display: none; }
+    .detail-back {
+      background: none; border: none;
+      color: var(--text-secondary); font-size: 13px;
+      cursor: pointer; margin-bottom: 16px;
+      padding: 0;
+    }
+    .detail-back:hover { color: var(--accent); }
+    .detail-heading { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .detail-email { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+    .detail-phone { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; font-family: var(--mono); }
+    .detail-section-title {
+      font-size: 11px; font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 6px; margin-top: 16px;
+    }
+    .detail-text { font-size: 13px; line-height: 1.5; color: var(--text-primary); }
+    .detail-list { list-style: disc; padding-left: 20px; font-size: 13px; line-height: 1.6; }
+    .detail-list li { color: var(--text-primary); }
+
+    /* Notes textarea in detail */
+    .notes-textarea {
+      width: 100%; padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 8px; color: var(--text-primary);
+      font-size: 13px; resize: vertical;
+      min-height: 60px; outline: none;
+      font-family: inherit;
+    }
+    .notes-textarea:focus { border-color: var(--accent); }
+    .notes-saved {
+      font-size: 11px; color: var(--accent);
+      margin-top: 4px; opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .notes-saved.show { opacity: 1; }
+
+    /* Messages */
+    .messages-area {
+      max-height: 280px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 4px 0;
+    }
+    .msg-row { display: flex; }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row.assistant { justify-content: flex-start; }
+    .msg-bubble {
+      max-width: 75%; padding: 10px 14px;
+      border-radius: 12px; font-size: 13px;
+      line-height: 1.4;
+    }
+    .msg-row.user .msg-bubble {
+      background: rgba(0,255,200,0.12);
+      color: var(--accent);
+      border-bottom-right-radius: 4px;
+    }
+    .msg-row.assistant .msg-bubble {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+
+    /* Follow-ups */
+    .fu-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 20px;
+      margin-bottom: 12px;
+      transition: box-shadow 0.2s;
+    }
+    .fu-card:hover { box-shadow: 0 0 15px rgba(0,255,200,0.1); }
+    .fu-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .fu-textarea {
+      width: 100%; padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 8px; color: var(--text-primary);
+      font-size: 13px; resize: vertical;
+      min-height: 80px; outline: none;
+      margin-bottom: 12px; font-family: inherit;
+    }
+    .fu-textarea:focus { border-color: var(--accent); }
+    .fu-btns { display: flex; gap: 8px; }
+    .btn-outline {
+      flex: 1; padding: 8px;
+      background: none;
+      border: 1px solid var(--card-border);
+      color: var(--accent);
+      border-radius: 8px; font-size: 12px;
+      font-weight: 500; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-outline:hover { background: rgba(0,255,200,0.06); border-color: var(--accent); }
+    .btn-solid {
+      flex: 1; padding: 8px;
+      background: var(--accent); color: #0a0a1a;
+      border: none; border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-solid:hover { opacity: 0.9; }
+    .btn-regen {
+      flex: 1; padding: 8px;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-secondary);
+      border-radius: 8px; font-size: 12px;
+      font-weight: 500; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-regen:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+
+    /* Export */
+    .export-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 28px;
+      max-width: 380px;
+    }
+    .export-text { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+    .btn-export {
+      width: 100%; padding: 12px;
+      background: var(--accent); color: #0a0a1a;
+      border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-export:hover { opacity: 0.9; }
+
+    /* Empty state */
+    .empty-msg { font-size: 13px; color: var(--text-secondary); padding: 16px 0; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,255,200,0.15); border-radius: 3px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .mobile-nav { display: block; }
+      .main-content { padding: 20px 16px 80px 16px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .leads-header { grid-template-columns: 1fr 0.7fr 0.7fr; }
+      .leads-header .col-email,
+      .leads-header .col-phone,
+      .leads-header .col-notes { display: none; }
+      .lead-row { grid-template-columns: 1fr 0.7fr 0.7fr; }
+      .lead-row .lead-email,
+      .lead-row .lead-product,
+      .lead-row .lead-notes-preview { display: none; }
+      .detail-panel { padding: 16px; }
+      .msg-bubble { max-width: 85%; }
+    }
+
+    @media (min-width: 769px) {
+      .mobile-nav { display: none; }
+      .sidebar { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login overlay -->
+  <div id="login-overlay" class="hidden">
+    <div class="login-box">
+      <h2>Mission Control</h2>
+      <p>Enter your admin token to continue</p>
+      <input type="password" id="login-token" placeholder="Admin token" />
+      <button id="login-submit">Authenticate</button>
+    </div>
+  </div>
+
+  <div class="app-wrapper">
+
+    <!-- Sidebar — desktop -->
+    <nav class="sidebar">
+      <div class="sidebar-title">3D VISUAL PRO</div>
+      <button id="nav-overview" class="nav-btn active" onclick="showTab('overview')">Overview</button>
+      <button id="nav-leads" class="nav-btn" onclick="showTab('leads')">Leads</button>
+      <button id="nav-followups" class="nav-btn" onclick="showTab('followups')">Follow-ups</button>
+      <button id="nav-export" class="nav-btn" onclick="showTab('export')">Export</button>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+
+      <!-- Overview tab -->
+      <div id="tab-overview" class="tab-content active">
+        <h1 class="section-title">Overview</h1>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div id="stat-total" class="stat-number stat-total">--</div>
+            <div class="stat-label">Total Leads</div>
+          </div>
+          <div class="stat-card">
+            <div id="stat-hot" class="stat-number stat-hot">--</div>
+            <div class="stat-label">Hot</div>
+          </div>
+          <div class="stat-card">
+            <div id="stat-warm" class="stat-number stat-warm">--</div>
+            <div class="stat-label">Warm</div>
+          </div>
+          <div class="stat-card">
+            <div id="stat-cold" class="stat-number stat-cold">--</div>
+            <div class="stat-label">Cold</div>
+          </div>
+        </div>
+        <div class="chart-panel">
+          <div class="chart-title">Leads per day</div>
+          <div id="chart" class="chart-area"></div>
+        </div>
+      </div>
+
+      <!-- Leads tab -->
+      <div id="tab-leads" class="tab-content">
+        <h1 class="section-title">Leads</h1>
+        <input id="leads-search" type="text" class="search-input" placeholder="Search by name, email, or product..." oninput="renderLeads()" />
+        <div class="leads-panel">
+          <div class="leads-header">
+            <span>Name</span>
+            <span class="col-email">Email</span>
+            <span>Product</span>
+            <span>Score</span>
+            <span class="col-notes">Notes</span>
+            <span>Status</span>
+          </div>
+          <div id="leads-table-body"></div>
+        </div>
+        <div id="lead-detail" class="detail-panel hidden"></div>
+      </div>
+
+      <!-- Follow-ups tab -->
+      <div id="tab-followups" class="tab-content">
+        <h1 class="section-title">Follow-ups</h1>
+        <div id="followups-list"></div>
+      </div>
+
+      <!-- Export tab -->
+      <div id="tab-export" class="tab-content">
+        <h1 class="section-title">Export</h1>
+        <div class="export-panel">
+          <p class="export-text">Download all leads as a CSV file including phone numbers and notes.</p>
+          <button class="btn-export" onclick="downloadCsv()">Download CSV</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Mobile nav -->
+  <div class="mobile-nav">
+    <div class="mobile-nav-inner">
+      <button id="mob-overview" class="mob-btn active" onclick="showTab('overview')">Overview</button>
+      <button id="mob-leads" class="mob-btn" onclick="showTab('leads')">Leads</button>
+      <button id="mob-followups" class="mob-btn" onclick="showTab('followups')">Follow-ups</button>
+      <button id="mob-export" class="mob-btn" onclick="showTab('export')">Export</button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================
+       AUTH
+       ========================================= */
+    let token = localStorage.getItem('adminToken');
+
+    function showLogin() {
+      document.getElementById('login-overlay').classList.remove('hidden');
+    }
+
+    function hideLogin() {
+      document.getElementById('login-overlay').classList.add('hidden');
+    }
+
+    function checkAuth() {
+      if (!token) {
+        showLogin();
+        return false;
       }
+      hideLogin();
+      return true;
+    }
+
+    document.getElementById('login-submit').addEventListener('click', function () {
+      var val = document.getElementById('login-token').value.trim();
+      if (val) {
+        token = val;
+        localStorage.setItem('adminToken', token);
+        hideLogin();
+        init();
+      }
+    });
+
+    document.getElementById('login-token').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('login-submit').click();
+    });
+
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    }
+
+    function handleAuthError(res) {
+      if (res.status === 401) {
+        token = null;
+        localStorage.removeItem('adminToken');
+        showLogin();
+        return true;
+      }
+      return false;
+    }
+
+    /* =========================================
+       STATE
+       ========================================= */
+    var allLeads = [];
+
+    /* =========================================
+       TAB SWITCHING
+       ========================================= */
+    function showTab(name) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(function (el) {
+        el.classList.remove('active');
+      });
+      // Show selected tab
+      var tab = document.getElementById('tab-' + name);
+      if (tab) tab.classList.add('active');
+
+      // Desktop nav
+      document.querySelectorAll('.nav-btn').forEach(function (el) {
+        el.classList.remove('active');
+      });
+      var navBtn = document.getElementById('nav-' + name);
+      if (navBtn) navBtn.classList.add('active');
+
+      // Mobile nav
+      document.querySelectorAll('.mob-btn').forEach(function (el) {
+        el.classList.remove('active');
+      });
+      var mobBtn = document.getElementById('mob-' + name);
+      if (mobBtn) mobBtn.classList.add('active');
+
+      // Load data for relevant tabs
       if (name === 'leads') renderLeads();
       if (name === 'followups') renderFollowups();
     }
 
-    // --- Stats ---
+    /* =========================================
+       STATS (Overview tab) — BUG FIX
+       ========================================= */
     async function loadStats() {
       try {
-        const res = await fetch('/api/stats', { headers: headers() });
+        var res = await fetch('/api/stats', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
         if (!res.ok) throw new Error('Failed to load stats');
-        statsData = await res.json();
-        document.getElementById('stat-total').textContent = statsData.total;
-        document.getElementById('stat-hot').textContent = statsData.hot;
-        document.getElementById('stat-warm').textContent = statsData.warm;
-        document.getElementById('stat-cold').textContent = statsData.cold;
-        renderChart(statsData.leadsByDay || []);
+        var data = await res.json();
+
+        // Update stat cards with actual numbers
+        document.getElementById('stat-total').textContent = data.total != null ? data.total : 0;
+        document.getElementById('stat-hot').textContent = data.hot != null ? data.hot : 0;
+        document.getElementById('stat-warm').textContent = data.warm != null ? data.warm : 0;
+        document.getElementById('stat-cold').textContent = data.cold != null ? data.cold : 0;
+
+        // Render bar chart
+        renderChart(data.leadsByDay || []);
       } catch (e) {
         console.error('Stats error:', e);
       }
     }
 
     function renderChart(days) {
-      const chart = document.getElementById('chart');
+      var chart = document.getElementById('chart');
       chart.innerHTML = '';
-      if (!days.length) {
-        const msg = document.createElement('p');
-        msg.className = 'text-xs text-gray-400';
+
+      if (!days || !days.length) {
+        var msg = document.createElement('div');
+        msg.className = 'chart-empty';
         msg.textContent = 'No data yet';
         chart.appendChild(msg);
         return;
       }
-      const max = Math.max(...days.map(d => d.count), 1);
-      days.forEach(d => {
-        const col = document.createElement('div');
-        col.className = 'flex flex-col items-center gap-1 flex-shrink-0';
-        const bar = document.createElement('div');
-        const pct = Math.round((d.count / max) * 100);
-        bar.style.width = '28px';
+
+      var max = Math.max.apply(null, days.map(function (d) { return d.count; }));
+      if (max < 1) max = 1;
+
+      days.forEach(function (d) {
+        var col = document.createElement('div');
+        col.className = 'chart-col';
+
+        var bar = document.createElement('div');
+        bar.className = 'chart-bar';
+        var pct = Math.round((d.count / max) * 100);
         bar.style.height = pct + '%';
         bar.style.minHeight = '4px';
-        bar.style.background = '#6366f1';
-        bar.style.borderRadius = '3px 3px 0 0';
         bar.title = d.date + ': ' + d.count;
-        const label = document.createElement('span');
-        label.className = 'text-xs text-gray-400';
+
+        var label = document.createElement('span');
+        label.className = 'chart-date';
         label.textContent = d.date.slice(5); // MM-DD
+
         col.appendChild(bar);
         col.appendChild(label);
         chart.appendChild(col);
       });
     }
 
-    // --- Leads ---
+    /* =========================================
+       LEADS
+       ========================================= */
     async function loadLeads() {
       try {
-        const res = await fetch('/api/leads', { headers: headers() });
+        var res = await fetch('/api/leads', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
         if (!res.ok) throw new Error('Failed to load leads');
         allLeads = await res.json();
       } catch (e) {
@@ -199,68 +703,88 @@
       }
     }
 
-    const SCORE_BADGE = {
-      hot: '🔥 Hot',
-      warm: '🌡️ Warm',
-      cold: '❄️ Cold'
-    };
-    const SCORE_COLOR = {
-      hot: 'text-red-500',
-      warm: 'text-amber-500',
-      cold: 'text-indigo-400'
-    };
+    function scoreBadgeText(score) {
+      if (score === 'hot') return 'HOT';
+      if (score === 'warm') return 'WARM';
+      if (score === 'cold') return 'COLD';
+      return (score || '').toUpperCase();
+    }
+
+    function scoreClass(score) {
+      if (score === 'hot') return 'score-hot';
+      if (score === 'warm') return 'score-warm';
+      if (score === 'cold') return 'score-cold';
+      return '';
+    }
+
+    function truncate(str, maxLen) {
+      if (!str) return '';
+      return str.length > maxLen ? str.substring(0, maxLen) + '...' : str;
+    }
 
     function renderLeads() {
-      const q = (document.getElementById('leads-search').value || '').toLowerCase();
-      const filtered = allLeads.filter(l =>
-        l.name.toLowerCase().includes(q) || l.email.toLowerCase().includes(q)
-      );
-      const body = document.getElementById('leads-table-body');
+      var q = (document.getElementById('leads-search').value || '').toLowerCase();
+      var filtered = allLeads.filter(function (l) {
+        return (l.name || '').toLowerCase().indexOf(q) !== -1 ||
+               (l.email || '').toLowerCase().indexOf(q) !== -1 ||
+               (l.product || '').toLowerCase().indexOf(q) !== -1;
+      });
+
+      var body = document.getElementById('leads-table-body');
       body.innerHTML = '';
+
       if (!filtered.length) {
-        const row = document.createElement('div');
-        row.className = 'px-4 py-6 text-sm text-gray-400 text-center';
-        row.textContent = 'No leads found.';
-        body.appendChild(row);
+        var empty = document.createElement('div');
+        empty.className = 'empty-msg';
+        empty.style.padding = '20px 16px';
+        empty.style.textAlign = 'center';
+        empty.textContent = 'No leads found.';
+        body.appendChild(empty);
         return;
       }
-      filtered.forEach(lead => {
-        const row = document.createElement('div');
-        row.className = 'grid grid-cols-4 md:grid-cols-5 gap-2 px-4 py-3 text-sm border-t border-gray-50 hover:bg-gray-50 cursor-pointer items-center';
-        row.onclick = () => showLeadDetail(lead.id);
 
-        const name = document.createElement('span');
-        name.className = 'font-medium text-gray-900 truncate';
-        name.textContent = lead.name;
+      filtered.forEach(function (lead) {
+        var row = document.createElement('div');
+        row.className = 'lead-row';
+        row.onclick = function () { showLeadDetail(lead.id); };
 
-        const email = document.createElement('span');
-        email.className = 'hidden md:block text-gray-400 truncate';
-        email.textContent = lead.email;
+        var name = document.createElement('span');
+        name.className = 'lead-name';
+        name.textContent = lead.name || '';
 
-        const product = document.createElement('span');
-        product.className = 'text-gray-500 text-xs truncate';
-        product.textContent = lead.product;
+        var email = document.createElement('span');
+        email.className = 'lead-email col-email';
+        email.textContent = lead.email || '';
 
-        const score = document.createElement('span');
-        score.className = 'text-xs font-semibold ' + (SCORE_COLOR[lead.score] || 'text-gray-400');
-        score.textContent = SCORE_BADGE[lead.score] || lead.score;
+        var product = document.createElement('span');
+        product.className = 'lead-product';
+        product.textContent = lead.product || '';
 
-        const statusSel = document.createElement('select');
-        statusSel.className = 'text-xs border border-gray-200 rounded px-1 py-1 bg-white';
-        ['new','contacted','converted','closed'].forEach(s => {
-          const opt = document.createElement('option');
+        var score = document.createElement('span');
+        score.className = 'score-badge ' + scoreClass(lead.score);
+        score.textContent = scoreBadgeText(lead.score);
+
+        var notesPreview = document.createElement('span');
+        notesPreview.className = 'lead-notes-preview col-notes';
+        notesPreview.textContent = truncate(lead.notes, 30);
+
+        var statusSel = document.createElement('select');
+        statusSel.className = 'status-select';
+        ['new', 'contacted', 'converted', 'closed'].forEach(function (s) {
+          var opt = document.createElement('option');
           opt.value = s;
           opt.textContent = s;
           if (s === lead.status) opt.selected = true;
           statusSel.appendChild(opt);
         });
-        statusSel.onclick = e => e.stopPropagation();
-        statusSel.onchange = e => updateStatus(lead.id, e.target.value);
+        statusSel.onclick = function (e) { e.stopPropagation(); };
+        statusSel.onchange = function (e) { updateStatus(lead.id, e.target.value); };
 
         row.appendChild(name);
         row.appendChild(email);
         row.appendChild(product);
         row.appendChild(score);
+        row.appendChild(notesPreview);
         row.appendChild(statusSel);
         body.appendChild(row);
       });
@@ -268,12 +792,13 @@
 
     async function updateStatus(id, status) {
       try {
-        await fetch('/api/leads/' + id + '/status', {
+        var res = await fetch('/api/leads/' + id + '/status', {
           method: 'PATCH',
-          headers: headers(),
-          body: JSON.stringify({ status })
+          headers: authHeaders(),
+          body: JSON.stringify({ status: status })
         });
-        const lead = allLeads.find(l => l.id === id);
+        if (handleAuthError(res)) return;
+        var lead = allLeads.find(function (l) { return l.id === id; });
         if (lead) lead.status = status;
       } catch (e) {
         console.error('Status update failed:', e);
@@ -282,141 +807,288 @@
 
     async function showLeadDetail(id) {
       try {
-        const res = await fetch('/api/leads/' + id, { headers: headers() });
+        var res = await fetch('/api/leads/' + id, { headers: authHeaders() });
+        if (handleAuthError(res)) return;
         if (!res.ok) throw new Error('Failed to load lead');
-        const data = await res.json();
-        document.getElementById('detail-name').textContent = data.name;
-        document.getElementById('detail-email').textContent = data.email;
-        document.getElementById('detail-summary').textContent = data.summary || '—';
+        var data = await res.json();
 
-        const bottlenecks = document.getElementById('detail-bottlenecks');
-        bottlenecks.innerHTML = '';
-        const bList = (() => { try { return JSON.parse(data.bottlenecks || '[]'); } catch { return []; } })();
-        bList.forEach(b => {
-          const li = document.createElement('li');
-          li.textContent = b;
-          bottlenecks.appendChild(li);
-        });
-        if (!bList.length) {
-          const li = document.createElement('li');
-          li.textContent = '—';
-          bottlenecks.appendChild(li);
+        var panel = document.getElementById('lead-detail');
+        panel.innerHTML = '';
+
+        // Back button
+        var backBtn = document.createElement('button');
+        backBtn.className = 'detail-back';
+        backBtn.textContent = '< Back';
+        backBtn.onclick = function () { panel.classList.add('hidden'); };
+        panel.appendChild(backBtn);
+
+        // Name
+        var heading = document.createElement('h2');
+        heading.className = 'detail-heading';
+        heading.textContent = data.name || '';
+        panel.appendChild(heading);
+
+        // Email
+        var emailP = document.createElement('p');
+        emailP.className = 'detail-email';
+        emailP.textContent = data.email || '';
+        panel.appendChild(emailP);
+
+        // Phone
+        var phoneP = document.createElement('p');
+        phoneP.className = 'detail-phone';
+        phoneP.textContent = data.phone ? 'Phone: ' + data.phone : '';
+        panel.appendChild(phoneP);
+
+        // AI Summary
+        var summaryTitle = document.createElement('div');
+        summaryTitle.className = 'detail-section-title';
+        summaryTitle.textContent = 'AI Summary';
+        panel.appendChild(summaryTitle);
+        var summaryText = document.createElement('p');
+        summaryText.className = 'detail-text';
+        summaryText.textContent = data.summary || '--';
+        panel.appendChild(summaryText);
+
+        // Bottlenecks
+        var bnTitle = document.createElement('div');
+        bnTitle.className = 'detail-section-title';
+        bnTitle.textContent = 'Bottlenecks';
+        panel.appendChild(bnTitle);
+        var bnList = document.createElement('ul');
+        bnList.className = 'detail-list';
+        var bottlenecks = [];
+        try { bottlenecks = JSON.parse(data.bottlenecks || '[]'); } catch (e) { bottlenecks = []; }
+        if (bottlenecks.length) {
+          bottlenecks.forEach(function (b) {
+            var li = document.createElement('li');
+            li.textContent = b;
+            bnList.appendChild(li);
+          });
+        } else {
+          var li = document.createElement('li');
+          li.textContent = '--';
+          bnList.appendChild(li);
         }
+        panel.appendChild(bnList);
 
-        const msgs = document.getElementById('detail-messages');
-        msgs.innerHTML = '';
-        const messages = data.messages || [];
-        messages.filter(m => m.role !== 'system').forEach(m => {
-          const div = document.createElement('div');
-          div.className = m.role === 'user' ? 'flex justify-end' : 'flex justify-start';
-          const bubble = document.createElement('div');
-          bubble.className = `max-w-xs px-3 py-2 rounded-xl text-sm ${m.role === 'user' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700'}`;
+        // Notes
+        var notesTitle = document.createElement('div');
+        notesTitle.className = 'detail-section-title';
+        notesTitle.textContent = 'Notes';
+        panel.appendChild(notesTitle);
+        var notesArea = document.createElement('textarea');
+        notesArea.className = 'notes-textarea';
+        notesArea.rows = 3;
+        notesArea.value = data.notes || '';
+        notesArea.placeholder = 'Add notes about this lead...';
+        var savedMsg = document.createElement('div');
+        savedMsg.className = 'notes-saved';
+        savedMsg.textContent = 'Saved';
+        notesArea.onblur = async function () {
+          try {
+            var r = await fetch('/api/leads/' + id + '/notes', {
+              method: 'PATCH',
+              headers: authHeaders(),
+              body: JSON.stringify({ notes: notesArea.value })
+            });
+            if (handleAuthError(r)) return;
+            // Update local state
+            var lead = allLeads.find(function (l) { return l.id === id; });
+            if (lead) lead.notes = notesArea.value;
+            // Flash saved indicator
+            savedMsg.classList.add('show');
+            setTimeout(function () { savedMsg.classList.remove('show'); }, 1500);
+          } catch (e) {
+            console.error('Notes save failed:', e);
+          }
+        };
+        panel.appendChild(notesArea);
+        panel.appendChild(savedMsg);
+
+        // Conversation
+        var msgTitle = document.createElement('div');
+        msgTitle.className = 'detail-section-title';
+        msgTitle.textContent = 'Conversation';
+        panel.appendChild(msgTitle);
+        var msgsArea = document.createElement('div');
+        msgsArea.className = 'messages-area';
+        var messages = data.messages || [];
+        var hasMessages = false;
+        messages.forEach(function (m) {
+          if (m.role === 'system') return;
+          hasMessages = true;
+          var row = document.createElement('div');
+          row.className = 'msg-row ' + m.role;
+          var bubble = document.createElement('div');
+          bubble.className = 'msg-bubble';
           bubble.textContent = m.content;
-          div.appendChild(bubble);
-          msgs.appendChild(div);
+          row.appendChild(bubble);
+          msgsArea.appendChild(row);
         });
+        if (!hasMessages) {
+          var noMsg = document.createElement('div');
+          noMsg.className = 'empty-msg';
+          noMsg.textContent = 'No messages.';
+          msgsArea.appendChild(noMsg);
+        }
+        panel.appendChild(msgsArea);
 
-        document.getElementById('lead-detail').classList.remove('hidden');
-        document.getElementById('lead-detail').scrollIntoView({ behavior: 'smooth' });
+        // Show panel
+        panel.classList.remove('hidden');
+        panel.scrollIntoView({ behavior: 'smooth' });
       } catch (e) {
         console.error('Lead detail error:', e);
       }
     }
 
-    // --- Follow-ups ---
-    async function renderFollowups() {
-      const list = document.getElementById('followups-list');
+    /* =========================================
+       FOLLOW-UPS
+       ========================================= */
+    function renderFollowups() {
+      var list = document.getElementById('followups-list');
       list.innerHTML = '';
-      const pending = allLeads.filter(l => !l.followup_sent && l.followup);
+      var pending = allLeads.filter(function (l) { return !l.followup_sent && l.followup; });
+
       if (!pending.length) {
-        const msg = document.createElement('p');
-        msg.className = 'text-sm text-gray-400';
+        var msg = document.createElement('div');
+        msg.className = 'empty-msg';
         msg.textContent = 'No pending follow-ups.';
         list.appendChild(msg);
         return;
       }
-      pending.forEach(lead => {
-        const card = document.createElement('div');
-        card.className = 'bg-white rounded-xl border border-gray-100 shadow-sm p-5';
+
+      pending.forEach(function (lead) {
+        var card = document.createElement('div');
+        card.className = 'fu-card';
         card.id = 'fu-card-' + lead.id;
 
-        const title = document.createElement('div');
-        title.className = 'font-semibold text-gray-800 text-sm mb-1';
-        title.textContent = lead.name + ' · ' + lead.email;
+        var title = document.createElement('div');
+        title.className = 'fu-title';
+        title.textContent = lead.name + ' -- ' + lead.email;
         card.appendChild(title);
 
-        const score = document.createElement('div');
-        score.className = 'text-xs ' + (SCORE_COLOR[lead.score] || 'text-gray-400') + ' mb-3';
-        score.textContent = SCORE_BADGE[lead.score] || lead.score;
-        card.appendChild(score);
+        var scoreBadge = document.createElement('div');
+        scoreBadge.className = 'score-badge ' + scoreClass(lead.score);
+        scoreBadge.style.marginBottom = '12px';
+        scoreBadge.style.fontSize = '11px';
+        scoreBadge.textContent = scoreBadgeText(lead.score);
+        card.appendChild(scoreBadge);
 
-        const textarea = document.createElement('textarea');
-        textarea.className = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-400';
+        var textarea = document.createElement('textarea');
+        textarea.className = 'fu-textarea';
         textarea.rows = 4;
         textarea.value = lead.followup || '';
         card.appendChild(textarea);
 
-        const btns = document.createElement('div');
-        btns.className = 'flex gap-2';
+        var btns = document.createElement('div');
+        btns.className = 'fu-btns';
 
-        const saveBtn = document.createElement('button');
-        saveBtn.className = 'flex-1 border border-indigo-300 text-indigo-600 text-sm rounded-lg py-2 hover:bg-indigo-50 transition';
+        // Save Draft
+        var saveBtn = document.createElement('button');
+        saveBtn.className = 'btn-outline';
         saveBtn.textContent = 'Save Draft';
-        saveBtn.onclick = async () => {
+        saveBtn.onclick = async function () {
           try {
-            await fetch('/api/followup/' + lead.id, {
+            var r = await fetch('/api/followup/' + lead.id, {
               method: 'PATCH',
-              headers: headers(),
+              headers: authHeaders(),
               body: JSON.stringify({ followup: textarea.value })
             });
+            if (handleAuthError(r)) return;
             lead.followup = textarea.value;
+            saveBtn.textContent = 'Saved';
+            setTimeout(function () { saveBtn.textContent = 'Save Draft'; }, 1200);
           } catch (e) { console.error(e); }
         };
 
-        const sentBtn = document.createElement('button');
-        sentBtn.className = 'flex-1 bg-indigo-600 text-white text-sm rounded-lg py-2 hover:bg-indigo-700 transition';
-        sentBtn.textContent = 'Mark Sent';
-        sentBtn.onclick = async () => {
+        // Regenerate
+        var regenBtn = document.createElement('button');
+        regenBtn.className = 'btn-regen';
+        regenBtn.textContent = 'Regenerate';
+        regenBtn.onclick = async function () {
           try {
-            await fetch('/api/followup/' + lead.id, {
+            regenBtn.textContent = 'Generating...';
+            var r = await fetch('/api/followup/' + lead.id, {
+              method: 'POST',
+              headers: authHeaders()
+            });
+            if (handleAuthError(r)) return;
+            if (!r.ok) throw new Error('Regenerate failed');
+            var result = await r.json();
+            textarea.value = result.followup || '';
+            lead.followup = textarea.value;
+            if (result.score) lead.score = result.score;
+            regenBtn.textContent = 'Regenerate';
+          } catch (e) {
+            console.error(e);
+            regenBtn.textContent = 'Regenerate';
+          }
+        };
+
+        // Mark Sent
+        var sentBtn = document.createElement('button');
+        sentBtn.className = 'btn-solid';
+        sentBtn.textContent = 'Mark Sent';
+        sentBtn.onclick = async function () {
+          try {
+            var r = await fetch('/api/followup/' + lead.id, {
               method: 'PATCH',
-              headers: headers(),
+              headers: authHeaders(),
               body: JSON.stringify({ followup: textarea.value, sent: true })
             });
+            if (handleAuthError(r)) return;
             lead.followup_sent = 1;
-            const cardEl = document.getElementById('fu-card-' + lead.id);
+            var cardEl = document.getElementById('fu-card-' + lead.id);
             if (cardEl) cardEl.remove();
+            // Check if list is now empty
+            if (!document.getElementById('followups-list').children.length) {
+              renderFollowups();
+            }
           } catch (e) { console.error(e); }
         };
 
         btns.appendChild(saveBtn);
+        btns.appendChild(regenBtn);
         btns.appendChild(sentBtn);
         card.appendChild(btns);
         list.appendChild(card);
       });
     }
 
-    // --- Export ---
+    /* =========================================
+       EXPORT
+       ========================================= */
     async function downloadCsv() {
-      const url = '/api/export';
-      const res = await fetch(url, { headers: headers() });
-      if (!res.ok) return alert('Export failed.');
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'leads.csv';
-      a.click();
+      try {
+        var res = await fetch('/api/export', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) { alert('Export failed.'); return; }
+        var blob = await res.blob();
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'leads.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (e) {
+        console.error('Export error:', e);
+      }
     }
 
-    // --- Init ---
+    /* =========================================
+       INIT
+       ========================================= */
     async function init() {
+      if (!checkAuth()) return;
       await Promise.all([loadStats(), loadLeads()]);
       showTab('overview');
     }
 
     // Service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW reg failed:', e));
+      navigator.serviceWorker.register('/sw.js').catch(function (e) {
+        console.warn('SW reg failed:', e);
+      });
     }
 
     init();
