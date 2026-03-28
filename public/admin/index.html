@@ -132,6 +132,45 @@
       overflow-y: auto; min-height: 100vh;
     }
 
+    /* ── Mission Control Feed ── */
+    .feed-section { margin-top: 48px; padding-top: 32px; border-top: 1px solid rgba(0,255,200,0.1); }
+    .feed-title { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+    .feed-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .feed-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+      padding: 20px; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .feed-card:hover { border-color: rgba(0,255,200,0.3); box-shadow: 0 0 12px rgba(0,255,200,0.08); }
+    .feed-card-label {
+      font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px; opacity: 0.7;
+    }
+    .feed-quote {
+      font-size: 15px; line-height: 1.6; color: rgba(255,255,255,0.85);
+      font-style: italic; margin-bottom: 10px;
+    }
+    .feed-quote-author { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .feed-item {
+      padding: 10px 0; border-bottom: 1px solid rgba(0,255,200,0.06);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-item-name { font-size: 13px; color: rgba(255,255,255,0.7); }
+    .feed-item-value { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+    .feed-item-value.up { color: #00c853; }
+    .feed-item-value.down { color: #ff3232; }
+    .feed-item-value.neutral { color: var(--accent); }
+    .feed-news-item { padding: 10px 0; border-bottom: 1px solid rgba(0,255,200,0.06); }
+    .feed-news-item:last-child { border-bottom: none; }
+    .feed-news-headline { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.5; margin-bottom: 4px; }
+    .feed-news-headline a { color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.2s; }
+    .feed-news-headline a:hover { color: var(--accent); }
+    .feed-news-source { font-size: 11px; color: rgba(255,255,255,0.35); }
+    .feed-loading { font-size: 12px; color: rgba(255,255,255,0.3); font-family: var(--mono); padding: 12px 0; }
+    @media (max-width: 768px) {
+      .feed-grid { grid-template-columns: 1fr; }
+    }
+
     /* Tab content */
     .tab-content { display: none; }
     .tab-content.active { display: block; }
@@ -530,6 +569,35 @@
         </div>
       </div>
 
+      <!-- Mission Control Feed -->
+      <div class="feed-section">
+        <div class="feed-title">// Mission Control Feed</div>
+        <div class="feed-grid">
+          <!-- Quote of the Day -->
+          <div class="feed-card">
+            <div class="feed-card-label">Daily Fuel</div>
+            <div id="feed-quote" class="feed-quote">Loading...</div>
+            <div id="feed-quote-author" class="feed-quote-author"></div>
+          </div>
+
+          <!-- Market Pulse -->
+          <div class="feed-card">
+            <div class="feed-card-label">Market Pulse</div>
+            <div id="feed-market">
+              <div class="feed-loading">Fetching prices...</div>
+            </div>
+          </div>
+
+          <!-- AI News -->
+          <div class="feed-card">
+            <div class="feed-card-label">AI Intel</div>
+            <div id="feed-news">
+              <div class="feed-loading">Loading headlines...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -635,7 +703,7 @@
        ========================================= */
     async function loadStats() {
       try {
-        var res = await fetch('/api/stats', { headers: authHeaders() });
+        var res = await fetch('/api/leads/stats', { headers: authHeaders() });
         if (handleAuthError(res)) return;
         if (!res.ok) throw new Error('Failed to load stats');
         var data = await res.json();
@@ -1061,7 +1129,7 @@
        ========================================= */
     async function downloadCsv() {
       try {
-        var res = await fetch('/api/export', { headers: authHeaders() });
+        var res = await fetch('/api/leads/export', { headers: authHeaders() });
         if (handleAuthError(res)) return;
         if (!res.ok) { alert('Export failed.'); return; }
         var blob = await res.blob();
@@ -1076,12 +1144,144 @@
     }
 
     /* =========================================
+       MISSION CONTROL FEED
+       ========================================= */
+    var quotes = [
+      { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+      { text: "Do not wait to strike till the iron is hot; but make it hot by striking.", author: "William Butler Yeats" },
+      { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+      { text: "It is not the strongest of the species that survives, nor the most intelligent, but the one most responsive to change.", author: "Charles Darwin" },
+      { text: "Revenue solves all known problems.", author: "Eric Schmidt" },
+      { text: "Move fast and break things. Unless you are breaking stuff, you are not moving fast enough.", author: "Mark Zuckerberg" },
+      { text: "The biggest risk is not taking any risk. In a world that is changing really quickly, the only strategy that is guaranteed to fail is not taking risks.", author: "Mark Zuckerberg" },
+      { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+      { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+      { text: "Your most unhappy customers are your greatest source of learning.", author: "Bill Gates" },
+      { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+      { text: "Hard work beats talent when talent doesn't work hard.", author: "Tim Notke" },
+      { text: "What gets measured gets managed.", author: "Peter Drucker" },
+      { text: "Execution is everything. An idea without execution is just a hallucination.", author: "Thomas Edison" },
+      { text: "Stay hungry. Stay foolish.", author: "Steve Jobs" },
+      { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+      { text: "Build something 100 people love, not something 1 million people kind of like.", author: "Brian Chesky" },
+      { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+      { text: "Price is what you pay. Value is what you get.", author: "Warren Buffett" },
+      { text: "AI is the new electricity.", author: "Andrew Ng" },
+      { text: "Courage is not the absence of fear, but the triumph over it.", author: "Nelson Mandela" },
+      { text: "Be so good they can't ignore you.", author: "Steve Martin" },
+      { text: "The only limit to our realization of tomorrow will be our doubts of today.", author: "Franklin D. Roosevelt" },
+      { text: "Don't be afraid to give up the good to go for the great.", author: "John D. Rockefeller" },
+      { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+      { text: "Work like there is someone working 24 hours a day to take it away from you.", author: "Mark Cuban" },
+      { text: "If you are not embarrassed by the first version of your product, you've launched too late.", author: "Reid Hoffman" },
+      { text: "First they ignore you, then they laugh at you, then they fight you, then you win.", author: "Mahatma Gandhi" },
+      { text: "We are what we repeatedly do. Excellence then is not an act but a habit.", author: "Aristotle" },
+      { text: "An investment in knowledge pays the best interest.", author: "Benjamin Franklin" }
+    ];
+
+    function loadQuote() {
+      var dayIndex = Math.floor(Date.now() / 86400000) % quotes.length;
+      var q = quotes[dayIndex];
+      document.getElementById('feed-quote').textContent = '"' + q.text + '"';
+      document.getElementById('feed-quote-author').textContent = '-- ' + q.author;
+    }
+
+    async function loadMarket() {
+      var el = document.getElementById('feed-market');
+      try {
+        var res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+        if (!res.ok) throw new Error('Market API failed');
+        var data = await res.json();
+        var html = '';
+
+        // BTC
+        var btcPrice = data.bitcoin.usd;
+        var btcChange = data.bitcoin.usd_24h_change;
+        var btcClass = btcChange >= 0 ? 'up' : 'down';
+        var btcSign = btcChange >= 0 ? '+' : '';
+        html += '<div class="feed-item"><span class="feed-item-name">BTC</span><span class="feed-item-value ' + btcClass + '">$' + btcPrice.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' (' + btcSign + btcChange.toFixed(1) + '%)</span></div>';
+
+        // ETH
+        var ethPrice = data.ethereum.usd;
+        var ethChange = data.ethereum.usd_24h_change;
+        var ethClass = ethChange >= 0 ? 'up' : 'down';
+        var ethSign = ethChange >= 0 ? '+' : '';
+        html += '<div class="feed-item"><span class="feed-item-name">ETH</span><span class="feed-item-value ' + ethClass + '">$' + ethPrice.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' (' + ethSign + ethChange.toFixed(1) + '%)</span></div>';
+
+        el.innerHTML = html;
+
+        // NVIDIA - try separate fetch
+        try {
+          var nvRes = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=2d');
+          if (nvRes.ok) {
+            var nvData = await nvRes.json();
+            var closes = nvData.chart.result[0].indicators.quote[0].close.filter(function(v) { return v != null; });
+            if (closes.length >= 2) {
+              var nvPrice = closes[closes.length - 1];
+              var nvPrev = closes[closes.length - 2];
+              var nvChange = ((nvPrice - nvPrev) / nvPrev) * 100;
+              var nvClass = nvChange >= 0 ? 'up' : 'down';
+              var nvSign = nvChange >= 0 ? '+' : '';
+              el.innerHTML += '<div class="feed-item"><span class="feed-item-name">NVDA</span><span class="feed-item-value ' + nvClass + '">$' + nvPrice.toFixed(2) + ' (' + nvSign + nvChange.toFixed(1) + '%)</span></div>';
+            }
+          }
+        } catch (e) {
+          // NVIDIA data optional - skip silently
+        }
+      } catch (e) {
+        el.innerHTML = '<div class="feed-item"><span class="feed-item-name">Market data unavailable</span></div>';
+      }
+    }
+
+    async function loadAINews() {
+      var el = document.getElementById('feed-news');
+      try {
+        // Use a public RSS-to-JSON proxy for TechCrunch AI category
+        var res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://techcrunch.com/category/artificial-intelligence/feed/');
+        if (!res.ok) throw new Error('News API failed');
+        var data = await res.json();
+        var items = (data.items || []).slice(0, 4);
+
+        if (!items.length) {
+          el.innerHTML = '<div class="feed-news-item"><span class="feed-news-headline">No headlines available</span></div>';
+          return;
+        }
+
+        var html = '';
+        items.forEach(function (item) {
+          var date = new Date(item.pubDate);
+          var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          html += '<div class="feed-news-item">';
+          html += '<div class="feed-news-headline"><a href="' + item.link + '" target="_blank" rel="noopener">' + escapeHtml(item.title) + '</a></div>';
+          html += '<div class="feed-news-source">' + escapeHtml(item.author || 'TechCrunch') + ' -- ' + dateStr + '</div>';
+          html += '</div>';
+        });
+        el.innerHTML = html;
+      } catch (e) {
+        el.innerHTML = '<div class="feed-news-item"><span class="feed-news-headline">News feed unavailable</span></div>';
+      }
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    function loadFeed() {
+      loadQuote();
+      loadMarket();
+      loadAINews();
+    }
+
+    /* =========================================
        INIT
        ========================================= */
     async function init() {
       if (!checkAuth()) return;
       await Promise.all([loadStats(), loadLeads()]);
       showTab('overview');
+      loadFeed();
     }
 
     // Service worker
