@@ -974,6 +974,22 @@
         }
         panel.appendChild(bnList);
 
+        // Status
+        var statusTitle = document.createElement('div');
+        statusTitle.className = 'detail-section-title';
+        statusTitle.textContent = 'Status';
+        panel.appendChild(statusTitle);
+        var statusSelect = document.createElement('select');
+        statusSelect.style.cssText = 'width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--card-border);color:#fff;border-radius:6px;font-size:13px;';
+        ['new', 'contacted', 'converted', 'closed'].forEach(function (s) {
+          var opt = document.createElement('option');
+          opt.value = s;
+          opt.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+          if (data.status === s) opt.selected = true;
+          statusSelect.appendChild(opt);
+        });
+        panel.appendChild(statusSelect);
+
         // Notes
         var notesTitle = document.createElement('div');
         notesTitle.className = 'detail-section-title';
@@ -984,29 +1000,51 @@
         notesArea.rows = 3;
         notesArea.value = data.notes || '';
         notesArea.placeholder = 'Add notes about this lead...';
-        var savedMsg = document.createElement('div');
-        savedMsg.className = 'notes-saved';
-        savedMsg.textContent = 'Saved';
-        notesArea.onblur = async function () {
-          try {
-            var r = await fetch('/api/leads/' + id + '/notes', {
-              method: 'PATCH',
-              headers: authHeaders(),
-              body: JSON.stringify({ notes: notesArea.value })
-            });
-            if (handleAuthError(r)) return;
-            // Update local state
-            var lead = allLeads.find(function (l) { return l.id === id; });
-            if (lead) lead.notes = notesArea.value;
-            // Flash saved indicator
-            savedMsg.classList.add('show');
-            setTimeout(function () { savedMsg.classList.remove('show'); }, 1500);
-          } catch (e) {
-            console.error('Notes save failed:', e);
-          }
-        };
         panel.appendChild(notesArea);
-        panel.appendChild(savedMsg);
+
+        // Save button + feedback
+        var saveRow = document.createElement('div');
+        saveRow.style.cssText = 'display:flex;align-items:center;gap:12px;margin-top:8px;';
+        var saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.style.cssText = 'padding:8px 24px;background:var(--accent);color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;';
+        var saveFeedback = document.createElement('span');
+        saveFeedback.style.cssText = 'font-size:13px;opacity:0;transition:opacity 0.3s;';
+        saveBtn.onclick = async function () {
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Saving...';
+          try {
+            var results = await Promise.all([
+              fetch('/api/leads/' + id + '/notes', {
+                method: 'PATCH', headers: authHeaders(),
+                body: JSON.stringify({ notes: notesArea.value })
+              }),
+              fetch('/api/leads/' + id + '/status', {
+                method: 'PATCH', headers: authHeaders(),
+                body: JSON.stringify({ status: statusSelect.value })
+              })
+            ]);
+            if (handleAuthError(results[0]) || handleAuthError(results[1])) return;
+            if (!results[0].ok || !results[1].ok) throw new Error('Save failed');
+            var lead = allLeads.find(function (l) { return l.id === id; });
+            if (lead) { lead.notes = notesArea.value; lead.status = statusSelect.value; }
+            renderLeads();
+            saveFeedback.textContent = 'Saved';
+            saveFeedback.style.color = 'var(--accent)';
+            saveFeedback.style.opacity = '1';
+            setTimeout(function () { saveFeedback.style.opacity = '0'; }, 2000);
+          } catch (e) {
+            saveFeedback.textContent = 'Save failed';
+            saveFeedback.style.color = '#ff6b6b';
+            saveFeedback.style.opacity = '1';
+            setTimeout(function () { saveFeedback.style.opacity = '0'; }, 2000);
+          }
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save';
+        };
+        saveRow.appendChild(saveBtn);
+        saveRow.appendChild(saveFeedback);
+        panel.appendChild(saveRow);
 
         // Conversation
         var msgTitle = document.createElement('div');
