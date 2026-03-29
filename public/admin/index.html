@@ -481,6 +481,34 @@
       .mobile-nav { display: none; }
       .sidebar { display: flex; }
     }
+
+    .leads-actions { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
+    .leads-actions button {
+      padding: 8px 16px; border: 1px solid var(--accent); background: rgba(0,255,200,0.08);
+      color: var(--accent); border-radius: 6px; cursor: pointer; font-size: 13px;
+      font-family: var(--mono); letter-spacing: 0.5px; transition: background 0.2s;
+    }
+    .leads-actions button:hover { background: rgba(0,255,200,0.18); }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+      padding: 28px; width: 400px; max-width: 90vw;
+    }
+    .modal-box h2 { color: var(--accent); font-family: var(--mono); font-size: 16px; margin-bottom: 18px; }
+    .modal-box label { display: block; color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 4px; margin-top: 12px; }
+    .modal-box input, .modal-box select, .modal-box textarea {
+      width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--card-border);
+      color: #fff; border-radius: 6px; font-size: 13px; box-sizing: border-box;
+    }
+    .modal-box textarea { resize: vertical; min-height: 60px; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+    .modal-btns button { padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; border: none; }
+    .modal-btns .btn-save { background: var(--accent); color: #000; font-weight: 600; }
+    .modal-btns .btn-cancel { background: transparent; border: 1px solid var(--card-border); color: rgba(255,255,255,0.6); }
   </style>
 </head>
 <body>
@@ -539,7 +567,12 @@
       <!-- Leads tab -->
       <div id="tab-leads" class="tab-content">
         <h1 class="section-title">Leads</h1>
-        <input id="leads-search" type="text" class="search-input" placeholder="Search by name, email, or product..." oninput="renderLeads()" />
+        <div class="leads-actions">
+          <input id="leads-search" type="text" class="search-input" placeholder="Search by name, email, or product..." oninput="renderLeads()" style="flex:1;" />
+          <button onclick="showAddLeadModal()">+ Add Lead</button>
+          <button onclick="document.getElementById('excel-upload').click()">Upload Excel</button>
+          <input type="file" id="excel-upload" accept=".xlsx,.csv" style="display:none;" onchange="handleExcelUpload(event)" />
+        </div>
         <div class="leads-panel">
           <div class="leads-header">
             <span>Name</span>
@@ -611,6 +644,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script>
     /* =========================================
        AUTH
@@ -1266,6 +1300,99 @@
       var div = document.createElement('div');
       div.textContent = str || '';
       return div.innerHTML;
+    }
+
+    function showAddLeadModal() {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.id = 'add-lead-modal';
+      overlay.innerHTML = '<div class="modal-box">' +
+        '<h2>Add Lead</h2>' +
+        '<label>Name *</label><input id="ml-name" type="text" />' +
+        '<label>Email *</label><input id="ml-email" type="email" />' +
+        '<label>Phone</label><input id="ml-phone" type="text" placeholder="+971..." />' +
+        '<label>Product *</label><select id="ml-product"><option value="ai_service">AI Service</option><option value="website">Website</option><option value="marketing">Marketing</option><option value="consultancy">Consultancy</option><option value="other">Other</option></select>' +
+        '<label>Score *</label><select id="ml-score"><option value="hot">Hot</option><option value="warm">Warm</option><option value="cold">Cold</option></select>' +
+        '<label>Notes</label><textarea id="ml-notes" rows="3"></textarea>' +
+        '<div class="modal-btns"><button class="btn-cancel" onclick="closeAddLeadModal()">Cancel</button><button class="btn-save" onclick="submitManualLead()">Save Lead</button></div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) closeAddLeadModal(); });
+    }
+
+    function closeAddLeadModal() {
+      var m = document.getElementById('add-lead-modal');
+      if (m) m.remove();
+    }
+
+    async function submitManualLead() {
+      var name = document.getElementById('ml-name').value.trim();
+      var email = document.getElementById('ml-email').value.trim();
+      var phone = document.getElementById('ml-phone').value.trim();
+      var product = document.getElementById('ml-product').value;
+      var score = document.getElementById('ml-score').value;
+      var notes = document.getElementById('ml-notes').value.trim();
+
+      if (!name || !email) { alert('Name and email are required'); return; }
+      if (!email.includes('@')) { alert('Invalid email format'); return; }
+
+      try {
+        var res = await fetch('/api/leads/manual', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({ name: name, email: email, phone: phone || undefined, product: product, score: score, notes: notes || undefined })
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) { var err = await res.json(); alert(err.error || 'Failed'); return; }
+        closeAddLeadModal();
+        await loadLeads();
+        renderLeads();
+      } catch (e) {
+        alert('Failed to add lead');
+      }
+    }
+
+    async function handleExcelUpload(event) {
+      var file = event.target.files[0];
+      if (!file) return;
+      event.target.value = '';
+
+      try {
+        var data = await file.arrayBuffer();
+        var workbook = XLSX.read(data);
+        var sheet = workbook.Sheets[workbook.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(sheet, { header: ['name', 'email', 'phone', 'product', 'score', 'notes'], defval: '' });
+
+        // Skip header row if first row looks like a header
+        if (rows.length > 0 && (rows[0].name.toLowerCase() === 'name' || rows[0].email.toLowerCase() === 'email')) {
+          rows.shift();
+        }
+
+        if (rows.length === 0) { alert('No data rows found'); return; }
+        if (rows.length > 500) { alert('Maximum 500 rows per upload. File has ' + rows.length + ' rows.'); return; }
+
+        if (!confirm('Upload ' + rows.length + ' leads?')) return;
+
+        var res = await fetch('/api/leads/import', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({ leads: rows })
+        });
+        if (handleAuthError(res)) return;
+        var result = await res.json();
+
+        var msg = 'Imported: ' + result.imported;
+        if (result.errors && result.errors.length > 0) {
+          msg += '\nErrors: ' + result.errors.length;
+          result.errors.slice(0, 5).forEach(function (e) {
+            msg += '\n  Row ' + e.row + ': ' + e.reason;
+          });
+          if (result.errors.length > 5) msg += '\n  ... and ' + (result.errors.length - 5) + ' more';
+        }
+        alert(msg);
+        await loadLeads();
+        renderLeads();
+      } catch (e) {
+        alert('Failed to process file: ' + e.message);
+      }
     }
 
     function loadFeed() {
