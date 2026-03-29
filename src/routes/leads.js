@@ -81,6 +81,58 @@ router.post('/manual', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/leads/import — bulk import leads from Excel/CSV (admin)
+router.post('/import', requireAuth, async (req, res) => {
+  const { leads } = req.body;
+  if (!Array.isArray(leads)) {
+    return res.status(400).json({ error: 'leads array is required' });
+  }
+  if (leads.length > 500) {
+    return res.status(400).json({ error: 'Maximum 500 leads per upload' });
+  }
+
+  const validProducts = ['ai_service', 'website', 'marketing', 'consultancy', 'other'];
+  const validScores = ['hot', 'warm', 'cold'];
+  const client = getClient();
+  const now = new Date().toISOString();
+  let imported = 0;
+  const errors = [];
+
+  for (let i = 0; i < leads.length; i++) {
+    const l = leads[i];
+    if (!l.name || !l.email || !l.product || !l.score) {
+      errors.push({ row: i + 1, reason: 'Missing required field (name, email, product, score)' });
+      continue;
+    }
+    if (!l.email.includes('@')) {
+      errors.push({ row: i + 1, reason: 'Invalid email format' });
+      continue;
+    }
+    if (!validProducts.includes(l.product)) {
+      errors.push({ row: i + 1, reason: `Invalid product: ${l.product}` });
+      continue;
+    }
+    if (!validScores.includes(l.score)) {
+      errors.push({ row: i + 1, reason: `Invalid score: ${l.score}` });
+      continue;
+    }
+
+    try {
+      const id = randomUUID();
+      await client.execute({
+        sql: `INSERT INTO leads (id, name, email, product, phone, summary, bottlenecks, score, followup, followup_sent, notes, status, created_at)
+              VALUES (?, ?, ?, ?, ?, '', '[]', ?, '', 0, ?, 'new', ?)`,
+        args: [id, l.name, l.email, l.product, l.phone || null, l.score, l.notes || null, now]
+      });
+      imported++;
+    } catch (err) {
+      errors.push({ row: i + 1, reason: 'Database error' });
+    }
+  }
+
+  res.json({ imported, errors });
+});
+
 // GET /api/stats — dashboard stats (admin) — must be before /:id
 router.get('/stats', requireAuth, async (req, res) => {
   try {

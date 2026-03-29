@@ -147,3 +147,50 @@ describe('POST /api/leads/manual', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('POST /api/leads/import', () => {
+  test('imports multiple valid leads', async () => {
+    const res = await request(app)
+      .post('/api/leads/import')
+      .set('Authorization', `Bearer ${process.env.ADMIN_TOKEN}`)
+      .send({ leads: [
+        { name: 'A', email: 'a@x.com', product: 'website', score: 'hot' },
+        { name: 'B', email: 'b@x.com', product: 'marketing', score: 'warm', phone: '+1234', notes: 'Note' }
+      ]});
+    expect(res.status).toBe(200);
+    expect(res.body.imported).toBe(2);
+    expect(res.body.errors).toHaveLength(0);
+  });
+
+  test('returns partial success with row errors', async () => {
+    const res = await request(app)
+      .post('/api/leads/import')
+      .set('Authorization', `Bearer ${process.env.ADMIN_TOKEN}`)
+      .send({ leads: [
+        { name: 'Good', email: 'g@x.com', product: 'website', score: 'hot' },
+        { name: 'Bad', email: 'noemail', product: 'website', score: 'hot' },
+        { name: 'Bad2', email: 'b@x.com', product: 'invalid', score: 'hot' }
+      ]});
+    expect(res.status).toBe(200);
+    expect(res.body.imported).toBe(1);
+    expect(res.body.errors).toHaveLength(2);
+  });
+
+  test('rejects more than 500 rows', async () => {
+    const leads = Array.from({ length: 501 }, (_, i) => ({
+      name: `Lead ${i}`, email: `l${i}@x.com`, product: 'website', score: 'hot'
+    }));
+    const res = await request(app)
+      .post('/api/leads/import')
+      .set('Authorization', `Bearer ${process.env.ADMIN_TOKEN}`)
+      .send({ leads });
+    expect(res.status).toBe(400);
+  });
+
+  test('requires auth', async () => {
+    const res = await request(app)
+      .post('/api/leads/import')
+      .send({ leads: [] });
+    expect(res.status).toBe(401);
+  });
+});
