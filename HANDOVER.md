@@ -196,6 +196,82 @@ The guarantee applies to the project setup fee only (not the monthly retainer):
 
 ---
 
+## v2.2 — Revisions & Admin Expansion (COMPLETE)
+
+Built 2026-03-29. All 10 tasks completed. 32 tests passing across 5 test suites. 8 commits.
+
+**Full spec:** `docs/superpowers/specs/2026-03-29-v2.2-revisions-design.md`
+**Implementation plan:** `docs/superpowers/plans/2026-03-29-v2.2-revisions.md`
+
+### 1. Chatbot System Prompt Rewrite
+
+The chatbot was too verbose — offering suggestions, using filler language, and subtly pitching services. The system prompt was completely rewritten with these rules:
+
+- **Sole purpose:** Collect information about the visitor's business, current structure, and bottlenecks. Never advise, suggest, sell, or pitch.
+- **Concise:** 1-2 sentences max per response. Acknowledge briefly ("Got it", "Understood") then ask the next question.
+- **Up to 2 questions per message** if naturally related (e.g. "What does your business do and who do you serve?"). Never more than two.
+- **Off-topic redirect:** If the visitor asks about 3D Visual Pro's services, pricing, or goes off-topic, acknowledge briefly then redirect: the chatbot's job is to learn about the visitor, not discuss the team's offerings.
+- **Minimum 3 exchanges** before CAPTURE_READY (reduced from 4). Prompt-only guard, no server-side enforcement.
+- **Target ~5-6 total exchanges.** Discovery paths streamlined to 2 core questions each (business context covered by the opening question).
+
+**Key decision:** The chatbot does NOT give suggestions or recommendations. That's the team's job during the follow-up consultation. The chatbot strictly extracts: what the business does, how it currently operates, and where things break down.
+
+### 2. Manual Lead Entry & Excel Upload
+
+The admin dashboard now supports adding leads from sources outside the chatbot (referrals, events, cold outreach).
+
+**Single lead form:** "Add Lead" button in the Leads tab opens a modal with: name, email, phone, product (dropdown), score (dropdown — admin sets this manually), notes. No AI qualification for manual leads — summary, bottlenecks, and followup fields are empty.
+
+**Excel/CSV bulk upload:** "Upload Excel" button accepts `.xlsx` or `.csv` files. Client-side parsing via SheetJS (CDN). Expected column format: name, email, phone, product, score, notes. Maximum 500 rows per upload. Partial-success model — valid rows are inserted even if others fail. Shows import count and error details.
+
+**New API endpoints:**
+- `POST /api/leads/manual` (auth required) — single manual lead entry with validation
+- `POST /api/leads/import` (auth required) — bulk import with per-row validation and error reporting
+
+**Key decisions:**
+- Basic email validation only (must contain @). No duplicate detection — team may intentionally add the same contact for different products.
+- Bulk import is NOT transactional. If row 3 fails, rows 1-2 are already inserted and row 4+ continues. Admin can fix and re-upload failed rows.
+- Express JSON body limit increased to 2MB (`express.json({ limit: '2mb' })`) to support large bulk uploads.
+
+### 3. Lead Detail — Explicit Save & Status Dropdown
+
+Previously, notes auto-saved on blur (not obvious). Status had no UI control in the detail view.
+
+**Changes:**
+- **Status dropdown** (new / contacted / converted / closed) now visible in lead detail, pre-selected from current value
+- **Notes textarea** retained but blur-save removed
+- **Explicit Save button** fires both PATCH calls in parallel (`Promise.all`). Shows "Saved" confirmation for 2 seconds, or "Save failed" on error.
+
+### 4. Daily Fuel — 5 Quotes with Fade Animation
+
+Previously showed 1 static quote per day. Now:
+- Picks 5 random quotes from the 30-quote pool on each page load
+- Each quote fades in (1s), holds (4s), fades out (1s), next quote fades in
+- Loops continuously through the 5 quotes (~30 second cycle)
+- CSS transitions drive the fade, JS setTimeout chain drives the cycle
+
+### 5. Market Pulse — Expanded Rolling Ticker with Server Proxy
+
+Previously showed only BTC and ETH (NVIDIA was supposed to show but failed silently due to Yahoo Finance CORS blocking browser requests).
+
+**Root cause fix:** All market data now fetched server-side via `GET /api/market` (no auth, public data). No more browser-direct calls to Yahoo Finance.
+
+**New file:** `src/routes/market.js` — server-side proxy with 1-hour in-memory cache.
+
+**Assets tracked (9 total):**
+- **Crypto:** BTC, ETH, Solana, XRP (CoinGecko API)
+- **Stocks:** NVIDIA, Tesla, S&P 500 (Yahoo Finance chart API)
+- **Commodities:** Gold, Oil/WTI Crude (Yahoo Finance chart API)
+
+**Frontend:** Vertical rolling ticker (bottom-to-top CSS animation). Items show symbol, price, 24hr % change (green/red). Pauses on hover. Hourly refresh via `setInterval`. Graceful fallback — individual assets show "N/A" if their API call fails.
+
+**Key decisions:**
+- Yahoo Finance API is unofficial with no SLA. Server-side proxy with User-Agent header and in-memory caching mitigates rate limits and CORS issues.
+- Cache is in-memory (resets on server restart). Acceptable for current scale.
+- CoinGecko free tier rate limits (~10-30 req/min) are fine with 1-hour cache.
+
+---
+
 ## Known Issues / Bugs
 - None currently tracked.
 
@@ -213,8 +289,9 @@ The guarantee applies to the project setup fee only (not the monthly retainer):
 | `src/services/qualifier.js` | AI lead scoring — single call returns summary, bottlenecks, score, followup |
 | `src/middleware/auth.js` | Bearer token auth with timing-safe comparison |
 | `src/routes/chat.js` | POST /api/chat — session management, AI replies, signal stripping |
-| `src/routes/leads.js` | Full leads CRUD + stats + CSV export |
+| `src/routes/leads.js` | Full leads CRUD + stats + CSV export + manual entry + bulk import |
 | `src/routes/followup.js` | Follow-up regenerate + edit/mark-sent |
+| `src/routes/market.js` | GET /api/market — server-side proxy for crypto, stocks, commodities (1hr cache) |
 
 ### Frontend
 | File | Purpose |
@@ -234,6 +311,8 @@ The guarantee applies to the project setup fee only (not the monthly retainer):
 | `docs/superpowers/specs/2026-03-27-v2-improvements-design.md` | v2 improvements design spec |
 | `docs/superpowers/plans/2026-03-27-lead-capture-chatbot.md` | v1 implementation plan (14 tasks) |
 | `docs/superpowers/plans/2026-03-28-v2-improvements.md` | v2 implementation plan (11 tasks) |
+| `docs/superpowers/specs/2026-03-29-v2.2-revisions-design.md` | v2.2 revisions design spec |
+| `docs/superpowers/plans/2026-03-29-v2.2-revisions.md` | v2.2 implementation plan (10 tasks) |
 | `.env.example` | Environment variable template |
 
 ### Tests
@@ -242,7 +321,7 @@ The guarantee applies to the project setup fee only (not the monthly retainer):
 | `tests/auth.test.js` | Auth middleware (missing token, wrong token, valid token, unset ADMIN_TOKEN) |
 | `tests/ai.test.js` | AI service (unknown provider, Groq adapter) |
 | `tests/chat.test.js` | Chat route (session creation, AI replies, signal stripping) |
-| `tests/leads.test.js` | Leads routes (capture, list, stats, export, status update) |
+| `tests/leads.test.js` | Leads routes (capture, list, stats, export, status update, manual entry, bulk import) |
 | `tests/followup.test.js` | Follow-up routes (auth, regenerate, edit/mark-sent) |
 
 ---
@@ -270,14 +349,17 @@ See `.env.example`. All must be set on Render:
 4. Open http://localhost:3000
 
 ## Running Tests
-`npm test` — expects 23 tests passing across 5 suites.
+`npm test` — expects 32 tests passing across 5 suites.
 
 ---
 
 ## Next Steps
-1. **Smoke test live deployment** — verify chatbot, admin dashboard, and capture flow at https://lead-capture-chatbot.onrender.com
-2. **Add privacy/trust section to landing page** — explain the privacy-first approach as a selling point for prospects
-3. **Embed chatbot on WordPress** — drop widget into Elementor HTML widget on 3dvisualpro.com, set API_BASE, configure CORS
-4. **Visitor analytics** — add page view tracking
-5. **Automated follow-ups** — AI-powered email/WhatsApp follow-up agent
+1. **Smoke test live deployment** — verify all v2.2 changes: concise chatbot, manual leads, Excel upload, save button, quote animation, market ticker at https://lead-capture-chatbot.onrender.com
+2. **Automated email follow-ups** — Two triggers:
+   - **Immediate:** When a lead submits contact info via the capture form, send an email prompting them to book a meeting appointment with a specialist for a consultation.
+   - **Stale lead follow-up:** If no status update on a lead after 2 days, send an automated follow-up email.
+   - **Requires:** Email service integration (e.g., Resend, SendGrid, or SMTP), email templates, a cron job or scheduled task to check for stale leads.
+3. **Add privacy/trust section to landing page** — explain the privacy-first approach as a selling point for prospects
+4. **Embed chatbot on WordPress** — drop widget into Elementor HTML widget on 3dvisualpro.com, set API_BASE, configure CORS
+5. **Visitor analytics** — add page view tracking
 6. **Upgrade AI provider** — swap from Groq/Llama to Claude or GPT-4 for better conversation quality
