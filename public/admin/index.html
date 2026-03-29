@@ -521,6 +521,28 @@
     .feed-quote-container.fading .feed-quote-author {
       opacity: 0;
     }
+    .ticker-viewport {
+      height: 160px; overflow: hidden; position: relative;
+    }
+    .ticker-track {
+      display: flex; flex-direction: column;
+      animation: tickerScroll 30s linear infinite;
+    }
+    @keyframes tickerScroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
+    }
+    .ticker-track:hover { animation-play-state: paused; }
+    .ticker-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid rgba(0,255,200,0.06);
+      white-space: nowrap; min-height: 28px;
+    }
+    .ticker-symbol { color: rgba(255,255,255,0.7); font-size: 13px; font-family: var(--mono); }
+    .ticker-price { font-size: 13px; font-family: var(--mono); }
+    .ticker-price.up { color: #00ff88; }
+    .ticker-price.down { color: #ff4444; }
+    .ticker-price.na { color: rgba(255,255,255,0.3); }
   </style>
 </head>
 <body>
@@ -630,8 +652,8 @@
           <!-- Market Pulse -->
           <div class="feed-card">
             <div class="feed-card-label">Market Pulse</div>
-            <div id="feed-market">
-              <div class="feed-loading">Fetching prices...</div>
+            <div id="feed-market" class="ticker-viewport">
+              <div class="feed-loading">Loading prices...</div>
             </div>
           </div>
 
@@ -1295,44 +1317,72 @@
     async function loadMarket() {
       var el = document.getElementById('feed-market');
       try {
-        var res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+        var res = await fetch('/api/market');
         if (!res.ok) throw new Error('Market API failed');
         var data = await res.json();
-        var html = '';
 
-        // BTC
-        var btcPrice = data.bitcoin.usd;
-        var btcChange = data.bitcoin.usd_24h_change;
-        var btcClass = btcChange >= 0 ? 'up' : 'down';
-        var btcSign = btcChange >= 0 ? '+' : '';
-        html += '<div class="feed-item"><span class="feed-item-name">BTC</span><span class="feed-item-value ' + btcClass + '">$' + btcPrice.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' (' + btcSign + btcChange.toFixed(1) + '%)</span></div>';
+        var items = [];
 
-        // ETH
-        var ethPrice = data.ethereum.usd;
-        var ethChange = data.ethereum.usd_24h_change;
-        var ethClass = ethChange >= 0 ? 'up' : 'down';
-        var ethSign = ethChange >= 0 ? '+' : '';
-        html += '<div class="feed-item"><span class="feed-item-name">ETH</span><span class="feed-item-value ' + ethClass + '">$' + ethPrice.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' (' + ethSign + ethChange.toFixed(1) + '%)</span></div>';
+        if (data.crypto) {
+          ['BTC', 'ETH', 'SOL', 'XRP'].forEach(function (sym) {
+            var d = data.crypto[sym];
+            if (d && d.price != null) {
+              items.push({ symbol: sym, price: d.price, change: d.change24h });
+            } else {
+              items.push({ symbol: sym, price: null, change: null });
+            }
+          });
+        }
 
+        if (data.stocks) {
+          ['NVDA', 'TSLA', 'S&P 500'].forEach(function (sym) {
+            var d = data.stocks[sym];
+            if (d && d.price != null) {
+              items.push({ symbol: sym, price: d.price, change: d.change24h });
+            } else {
+              items.push({ symbol: sym, price: null, change: null });
+            }
+          });
+        }
+
+        if (data.commodities) {
+          ['Gold', 'Oil'].forEach(function (sym) {
+            var d = data.commodities[sym];
+            if (d && d.price != null) {
+              items.push({ symbol: sym, price: d.price, change: d.change24h });
+            } else {
+              items.push({ symbol: sym, price: null, change: null });
+            }
+          });
+        }
+
+        if (items.length === 0) {
+          el.innerHTML = '<div class="feed-item"><span class="feed-item-name">Market data unavailable</span></div>';
+          return;
+        }
+
+        function renderItem(item) {
+          if (item.price == null) {
+            return '<div class="ticker-item"><span class="ticker-symbol">' + item.symbol + '</span><span class="ticker-price na">N/A</span></div>';
+          }
+          var cls = item.change >= 0 ? 'up' : 'down';
+          var sign = item.change >= 0 ? '+' : '';
+          var priceStr = item.price >= 1 ? '$' + item.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '$' + item.price.toFixed(4);
+          var changeStr = item.change != null ? ' (' + sign + item.change.toFixed(1) + '%)' : '';
+          return '<div class="ticker-item"><span class="ticker-symbol">' + item.symbol + '</span><span class="ticker-price ' + cls + '">' + priceStr + changeStr + '</span></div>';
+        }
+
+        var html = '<div class="ticker-track">';
+        items.forEach(function (item) { html += renderItem(item); });
+        items.forEach(function (item) { html += renderItem(item); });
+        html += '</div>';
         el.innerHTML = html;
 
-        // NVIDIA - try separate fetch
-        try {
-          var nvRes = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=2d');
-          if (nvRes.ok) {
-            var nvData = await nvRes.json();
-            var closes = nvData.chart.result[0].indicators.quote[0].close.filter(function(v) { return v != null; });
-            if (closes.length >= 2) {
-              var nvPrice = closes[closes.length - 1];
-              var nvPrev = closes[closes.length - 2];
-              var nvChange = ((nvPrice - nvPrev) / nvPrev) * 100;
-              var nvClass = nvChange >= 0 ? 'up' : 'down';
-              var nvSign = nvChange >= 0 ? '+' : '';
-              el.innerHTML += '<div class="feed-item"><span class="feed-item-name">NVDA</span><span class="feed-item-value ' + nvClass + '">$' + nvPrice.toFixed(2) + ' (' + nvSign + nvChange.toFixed(1) + '%)</span></div>';
-            }
-          }
-        } catch (e) {
-          // NVIDIA data optional - skip silently
+        var track = el.querySelector('.ticker-track');
+        if (track) {
+          var totalHeight = track.scrollHeight / 2;
+          var speed = 20;
+          track.style.animationDuration = (totalHeight / speed) + 's';
         }
       } catch (e) {
         el.innerHTML = '<div class="feed-item"><span class="feed-item-name">Market data unavailable</span></div>';
@@ -1481,6 +1531,7 @@
       await Promise.all([loadStats(), loadLeads()]);
       showTab('overview');
       loadFeed();
+      setInterval(loadMarket, 3600000);
     }
 
     // Service worker
