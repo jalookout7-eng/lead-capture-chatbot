@@ -509,6 +509,18 @@
     .modal-btns button { padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; border: none; }
     .modal-btns .btn-save { background: var(--accent); color: #000; font-weight: 600; }
     .modal-btns .btn-cancel { background: transparent; border: 1px solid var(--card-border); color: rgba(255,255,255,0.6); }
+    .feed-quote-container {
+      position: relative; min-height: 80px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .feed-quote-container .feed-quote,
+    .feed-quote-container .feed-quote-author {
+      transition: opacity 1s ease-in-out;
+    }
+    .feed-quote-container.fading .feed-quote,
+    .feed-quote-container.fading .feed-quote-author {
+      opacity: 0;
+    }
   </style>
 </head>
 <body>
@@ -609,8 +621,10 @@
           <!-- Quote of the Day -->
           <div class="feed-card">
             <div class="feed-card-label">Daily Fuel</div>
-            <div id="feed-quote" class="feed-quote">Loading...</div>
-            <div id="feed-quote-author" class="feed-quote-author"></div>
+            <div id="feed-quote-container" class="feed-quote-container">
+              <div id="feed-quote" class="feed-quote"></div>
+              <div id="feed-quote-author" class="feed-quote-author"></div>
+            </div>
           </div>
 
           <!-- Market Pulse -->
@@ -1252,10 +1266,30 @@
     ];
 
     function loadQuote() {
-      var dayIndex = Math.floor(Date.now() / 86400000) % quotes.length;
-      var q = quotes[dayIndex];
-      document.getElementById('feed-quote').textContent = '"' + q.text + '"';
-      document.getElementById('feed-quote-author').textContent = '-- ' + q.author;
+      var shuffled = quotes.slice().sort(function () { return 0.5 - Math.random(); });
+      var selected = shuffled.slice(0, 5);
+      var container = document.getElementById('feed-quote-container');
+      var quoteEl = document.getElementById('feed-quote');
+      var authorEl = document.getElementById('feed-quote-author');
+      var index = 0;
+
+      function showQuote() {
+        quoteEl.textContent = '"' + selected[index].text + '"';
+        authorEl.textContent = '-- ' + selected[index].author;
+        container.classList.remove('fading');
+      }
+
+      function cycle() {
+        container.classList.add('fading');
+        setTimeout(function () {
+          index = (index + 1) % selected.length;
+          showQuote();
+          setTimeout(function () { cycle(); }, 4000);
+        }, 1000);
+      }
+
+      showQuote();
+      setTimeout(function () { cycle(); }, 4000);
     }
 
     async function loadMarket() {
