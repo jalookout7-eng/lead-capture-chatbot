@@ -104,3 +104,46 @@ describe('PATCH /api/leads/:id/notes', () => {
     expect(res.body.success).toBe(true);
   });
 });
+
+describe('POST /api/leads/manual', () => {
+  test('creates a manual lead with valid data', async () => {
+    const res = await request(app)
+      .post('/api/leads/manual')
+      .set('Authorization', `Bearer ${process.env.ADMIN_TOKEN}`)
+      .send({ name: 'Test Lead', email: 'test@example.com', phone: '+971501234567', product: 'website', score: 'warm', notes: 'Met at event' });
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBeDefined();
+    expect(res.body.score).toBe('warm');
+  });
+
+  test('rejects missing required fields', async () => {
+    const res = await request(app)
+      .post('/api/leads/manual')
+      .set('Authorization', `Bearer ${process.env.ADMIN_TOKEN}`)
+      .send({ name: 'Test Lead' });
+    expect(res.status).toBe(400);
+  });
+
+  test('rejects invalid email', async () => {
+    const res = await request(app)
+      .post('/api/leads/manual')
+      .set('Authorization', `Bearer ${process.env.ADMIN_TOKEN}`)
+      .send({ name: 'Test', email: 'invalid', product: 'website', score: 'hot' });
+    expect(res.status).toBe(400);
+  });
+
+  test('rejects invalid score', async () => {
+    const res = await request(app)
+      .post('/api/leads/manual')
+      .set('Authorization', `Bearer ${process.env.ADMIN_TOKEN}`)
+      .send({ name: 'Test', email: 'test@x.com', product: 'website', score: 'invalid' });
+    expect(res.status).toBe(400);
+  });
+
+  test('requires auth', async () => {
+    const res = await request(app)
+      .post('/api/leads/manual')
+      .send({ name: 'Test', email: 'test@x.com', product: 'website', score: 'hot' });
+    expect(res.status).toBe(401);
+  });
+});

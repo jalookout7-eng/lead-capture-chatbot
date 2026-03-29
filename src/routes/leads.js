@@ -46,6 +46,41 @@ router.post('/', async (req, res) => {
   }
 });
 
+// POST /api/leads/manual — manually add a lead (admin)
+router.post('/manual', requireAuth, async (req, res) => {
+  const { name, email, phone, product, score, notes } = req.body;
+  const validProducts = ['ai_service', 'website', 'marketing', 'consultancy', 'other'];
+  const validScores = ['hot', 'warm', 'cold'];
+
+  if (!name || !email || !product || !score) {
+    return res.status(400).json({ error: 'name, email, product, and score are required' });
+  }
+  if (!email.includes('@')) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  if (!validProducts.includes(product)) {
+    return res.status(400).json({ error: `product must be one of: ${validProducts.join(', ')}` });
+  }
+  if (!validScores.includes(score)) {
+    return res.status(400).json({ error: `score must be one of: ${validScores.join(', ')}` });
+  }
+
+  try {
+    const client = getClient();
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    await client.execute({
+      sql: `INSERT INTO leads (id, name, email, product, phone, summary, bottlenecks, score, followup, followup_sent, notes, status, created_at)
+            VALUES (?, ?, ?, ?, ?, '', '[]', ?, '', 0, ?, 'new', ?)`,
+      args: [id, name, email, product, phone || null, score, notes || null, now]
+    });
+    res.json({ id, score });
+  } catch (err) {
+    console.error('Manual lead error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/stats — dashboard stats (admin) — must be before /:id
 router.get('/stats', requireAuth, async (req, res) => {
   try {
