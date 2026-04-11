@@ -9,6 +9,17 @@ function ensureReady() {
 }
 
 module.exports = async (req, res) => {
+  // Allow cross-origin requests — widget is embedded on external WordPress sites
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle browser preflight
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+
   await ensureReady();
   app(req, res);
 };
