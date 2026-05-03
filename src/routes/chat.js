@@ -61,9 +61,10 @@ CONVERSATION FLOW:
 
 router.post('/', async (req, res) => {
   const { sessionId, message } = req.body;
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'message is required' });
+  if (typeof message !== 'string') {
+    return res.status(400).json({ error: 'message must be a string' });
   }
+  const trimmedMessage = message.trim();
 
   try {
     const client = getClient();
@@ -127,3 +128,5 @@ router.post('/', async (req, res) => {
 });
 
 module.exports = router;
+
+
