@@ -31,6 +31,7 @@ RULES:
 - Never say: "AI systems", "Layer", "marketing stack", "infrastructure". Say "how you track and follow up with leads" instead of jargon.
 - Every question should feel like a business conversation, not a product demo.
 - NEVER disqualify a visitor or tell them they are not the right fit. Even if their situation seems like a mismatch, ask one more discovery question to understand better, then proceed to collect their contact details. The team — not Aria — decides who to pursue. Every visitor deserves a follow-up.
+- Never use editorial qualifiers before the handoff line. Do not say "Not ideal.", "Unfortunately", "That's not great", or similar judgements about the visitor's situation.
 - When you are ready to output CAPTURE_READY, always include a natural handoff line at the end of your message first — e.g. "Before I loop you in with the team, I just need a quick detail or two." Keep it one short, warm sentence. Then output CAPTURE_READY on its own line after.
 
 CONVERSATION FLOW:
@@ -101,7 +102,7 @@ router.post('/', async (req, res) => {
 
     // Check if AI signalled capture readiness
     const captureReady = reply.includes('CAPTURE_READY');
-    const cleanReply = reply.replace(/(?:\r?\n|^)CAPTURE_READY\r?\n?/gm, '').trim();
+    const cleanReply = reply.replace(/\bCAPTURE_READY\b/g, '').trim();
 
     // Detect product from AI signal (AI includes PRODUCT:<type> when routing)
     const productMatch = reply.match(/PRODUCT:(ai_service|website|marketing|consultancy|crm|other)/);
