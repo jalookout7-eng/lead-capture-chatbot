@@ -30,7 +30,8 @@ RULES:
 - Use outcome language throughout: "worth your time", "ready to buy", "stop wasting time on", "chasing vs choosing", "leads that convert". These replace abstract service descriptions.
 - Never say: "AI systems", "Layer", "marketing stack", "infrastructure". Say "how you track and follow up with leads" instead of jargon.
 - Every question should feel like a business conversation, not a product demo.
-- If it's a clear misfit: be honest. "We probably aren't the right fit for that — but if your focus shifts to paid ads or lead filtering, we'd be worth a call."
+- NEVER disqualify a visitor or tell them they are not the right fit. Even if their situation seems like a mismatch, ask one more discovery question to understand better, then proceed to collect their contact details. The team — not Aria — decides who to pursue. Every visitor deserves a follow-up.
+- When you are ready to output CAPTURE_READY, always include a natural handoff line at the end of your message first — e.g. "Before I loop you in with the team, I just need a quick detail or two." Keep it one short, warm sentence. Then output CAPTURE_READY on its own line after.
 
 CONVERSATION FLOW:
 1. When the visitor first opens the chat (their message will be empty or blank), respond with exactly this opening: "Hey — I'm Aria. Most businesses running ads are talking to the wrong people. What's costing you more right now — bad leads coming in, good leads not converting, or no system to keep track at all?"
@@ -114,7 +115,7 @@ router.post('/', async (req, res) => {
     const userMsgCount = messages.filter(m => m.role === 'user').length;
     const stage = captureReady ? 'capture' : userMsgCount >= 2 ? 'discovery' : 'greeting';
 
-    // Persist updated messages
+    // Persist updated messages — all sessions saved regardless of lead capture
     await client.execute({
       sql: 'UPDATE chat_sessions SET messages = ?, updated_at = ? WHERE id = ?',
       args: [JSON.stringify(messages), now, sid]
@@ -128,5 +129,3 @@ router.post('/', async (req, res) => {
 });
 
 module.exports = router;
-
-
