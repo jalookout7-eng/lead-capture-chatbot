@@ -221,3 +221,61 @@ Steps in order:
 - "Delete status does not update existing leads" — explicit. Leads with a deleted status label retain the label as a string; it just won't appear in the dropdown anymore.
 - "Pipeline status stored as label string not foreign key" — explicit. Avoids cascade issues on delete.
 - Date filter default (30D) matches existing behaviour — no breaking change to the stats endpoint when params are omitted.
+
+---
+
+## Future: Layer 3 Intelligence — Aria Learning System
+
+**Status: Deferred — design only, not part of Sub-project A implementation.**
+
+This section describes the architecture for making Aria a self-improving qualifier. It is included here because the data foundation (notes, pipeline statuses) built in Sub-project A is what makes it possible.
+
+### Concept
+
+Aria currently asks scripted questions and routes based on keyword patterns. Layer 3 upgrades this: Aria builds a private knowledge base of what signals reliably predict lead quality — which questions draw out the most useful answers, which phrases indicate strong intent, which situations consistently lead to closed deals vs. wasted time. This database grows with every conversation and outcome tracked in Mission Control.
+
+### Data model
+
+New table: `aria_signal_memory`
+
+```sql
+CREATE TABLE IF NOT EXISTS aria_signal_memory (
+  id            TEXT PRIMARY KEY,
+  signal_type   TEXT NOT NULL,  -- 'question_effectiveness' | 'intent_indicator' | 'disqualifier' | 'segment_pattern'
+  signal_key    TEXT NOT NULL,  -- e.g. "uses_whatsapp_only", "no_follow_up_system", "meta_ads_low_quality"
+  description   TEXT NOT NULL,  -- human-readable summary of the pattern
+  strength      REAL NOT NULL DEFAULT 0.5,  -- 0.0 (weak signal) to 1.0 (strong predictor)
+  outcome       TEXT,           -- 'hot' | 'warm' | 'cold' | 'converted' | 'lost'
+  sample_count  INTEGER NOT NULL DEFAULT 1,
+  last_updated  TEXT NOT NULL
+);
+```
+
+Alternatively, a flat JSON file stored in a private GitHub repo (e.g. `jalookout7-eng/aria-memory`) updated by Mission Control when leads are marked as converted or lost. Either approach works — Turso is simpler (no GitHub dependency), GitHub is human-readable and version-controlled.
+
+**Recommended:** Turso table. Simpler operationally. The team can view/edit signals directly from a future MC "Aria Memory" tab.
+
+### How it works
+
+1. **Signal capture** — When a lead's pipeline status is updated to `Closed` or `Lost` in Mission Control, MC offers a one-click prompt: "What was the key signal?" with a short free-text field. This is written to `aria_signal_memory`.
+
+2. **Pattern injection** — A new `GET /api/aria/memory` endpoint returns the top 20 strongest signals (by `strength × sample_count`). These are injected into Aria's system prompt as a dynamic appendix: *"Based on past conversations, these patterns predict strong leads: [signals]. These predict poor fit: [disqualifiers]."*
+
+3. **Strength updates** — When a signal is confirmed by a new outcome (e.g. "uses WhatsApp only" → lead closed again), its `strength` increases. When contradicted, it decreases. A simple weighted average over `sample_count`.
+
+4. **Human review** — Signals are not auto-applied above a threshold without review. The MC "Aria Memory" tab (future Sub-project D) shows all signals with their strength scores so the team can delete noise, rename patterns, and flag anything that seems wrong.
+
+### What this enables
+
+- Aria asks follow-up questions more strategically for situations similar to past strong leads
+- Aria learns to route certain answer patterns to `SEGMENT:crm` vs `SEGMENT:ads` based on actual conversion data, not just keywords
+- Pipeline statuses from Sub-project A become the ground truth: "contacted → meeting done → closed" chains train the strongest signals
+- Over time, Aria's cold/warm/hot scoring becomes calibrated to 3D Visual Pro's actual client patterns, not generic defaults
+
+### Implementation order
+
+This is **Sub-project D**. It depends on:
+- Sub-project A (pipeline statuses, notes — for outcome tracking)
+- At least 3–6 months of real lead data in Mission Control
+
+Do not implement until there is meaningful data to learn from.
