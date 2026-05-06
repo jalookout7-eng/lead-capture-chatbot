@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS pipeline_status_options (
 );
 ```
 
-Seven defaults seeded by the migration script (skipped if already present):
-`Dropped`, `Email Sent`, `WhatsApp Sent`, `Meeting Done`, `Negotiating`, `Closed`, `Lost`
+Eight defaults seeded by the migration script (skipped if already present):
+`Contacted`, `Dropped`, `Email Sent`, `WhatsApp Sent`, `Meeting Done`, `Negotiating`, `Closed`, `Lost`
 
 ### New column: `leads.pipeline_status`
 
