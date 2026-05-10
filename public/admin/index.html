@@ -268,7 +268,7 @@
     }
     .leads-header {
       display: grid;
-      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr;
+      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr 1fr;
       gap: 8px; padding: 12px 16px;
       background: rgba(0,255,200,0.03);
       font-size: 11px; font-weight: 600;
@@ -278,7 +278,7 @@
     }
     .lead-row {
       display: grid;
-      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr;
+      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr 1fr;
       gap: 8px; padding: 12px 16px;
       font-size: 13px;
       border-bottom: 1px solid rgba(0,255,200,0.05);
@@ -312,6 +312,22 @@
       cursor: pointer; outline: none;
     }
     .status-select option { background: #1a1a2e; color: var(--text-primary); }
+
+    /* Pipeline column select */
+    .pipeline-select {
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-primary);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 12px;
+      max-width: 140px;
+      cursor: pointer;
+    }
+    .pipeline-select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
 
     /* Lead detail panel */
     .detail-panel {
@@ -756,6 +772,7 @@
             <span>Score</span>
             <span class="col-notes">Notes</span>
             <span>Status</span>
+            <span class="col-pipeline">Pipeline</span>
           </div>
           <div id="leads-table-body"></div>
         </div>
@@ -985,6 +1002,51 @@
     }
 
     /* =========================================
+       PIPELINE STATUS CACHE
+       ========================================= */
+    var pipelineStatusCache = [];
+
+    async function loadPipelineStatusCache() {
+      try {
+        var res = await fetch('/api/settings/pipeline-statuses', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          pipelineStatusCache = [];
+          return;
+        }
+        var data = await res.json();
+        pipelineStatusCache = data.statuses || [];
+        // If the leads table is currently rendered, re-render so dropdowns refresh
+        var body = document.getElementById('leads-table-body');
+        if (body && body.children.length > 0) {
+          renderLeads();
+        }
+      } catch (err) {
+        console.error('loadPipelineStatusCache error:', err);
+        pipelineStatusCache = [];
+      }
+    }
+
+    async function updatePipeline(leadId, label) {
+      try {
+        var res = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/pipeline-status', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ pipeline_status: label || null })
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          alert('Failed to update pipeline status.');
+          return;
+        }
+        var lead = allLeads.find(function (l) { return l.id === leadId; });
+        if (lead) lead.pipeline_status = label || null;
+      } catch (err) {
+        console.error('updatePipeline error:', err);
+      }
+    }
+
+    /* =========================================
        LEADS
        ========================================= */
     async function loadLeads() {
@@ -1075,12 +1137,30 @@
         statusSel.onclick = function (e) { e.stopPropagation(); };
         statusSel.onchange = function (e) { updateStatus(lead.id, e.target.value); };
 
+        var pipelineSel = document.createElement('select');
+        pipelineSel.className = 'pipeline-select';
+        var noneOpt = document.createElement('option');
+        noneOpt.value = '';
+        noneOpt.textContent = '—';
+        if (!lead.pipeline_status) noneOpt.selected = true;
+        pipelineSel.appendChild(noneOpt);
+        pipelineStatusCache.forEach(function (s) {
+          var opt = document.createElement('option');
+          opt.value = s.label;
+          opt.textContent = s.label;
+          if (s.label === lead.pipeline_status) opt.selected = true;
+          pipelineSel.appendChild(opt);
+        });
+        pipelineSel.onclick = function (e) { e.stopPropagation(); };
+        pipelineSel.onchange = function (e) { updatePipeline(lead.id, e.target.value); };
+
         row.appendChild(name);
         row.appendChild(email);
         row.appendChild(product);
         row.appendChild(score);
         row.appendChild(notesPreview);
         row.appendChild(statusSel);
+        row.appendChild(pipelineSel);
         body.appendChild(row);
       });
     }
@@ -1696,7 +1776,7 @@
        ========================================= */
     async function init() {
       if (!checkAuth()) return;
-      await Promise.all([loadStats(), loadLeads()]);
+      await Promise.all([loadStats(), loadLeads(), loadPipelineStatusCache()]);
       showTab('overview');
       loadFeed();
       setInterval(loadMarket, 3600000);
