@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "migrate:v2": "node scripts/migrate-v2.js"
   },
   "jest": {
     "testEnvironment": "node"
