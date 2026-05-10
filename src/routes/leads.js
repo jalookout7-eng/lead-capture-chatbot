@@ -249,4 +249,28 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/leads/:id/pipeline-status — update configurable pipeline status (admin)
+router.patch('/:id/pipeline-status', requireAuth, async (req, res) => {
+  const { pipeline_status } = req.body;
+  // Accept any string label or null. We do NOT validate against pipeline_status_options
+  // because the spec says deleting an option leaves existing labels intact on leads.
+  if (pipeline_status !== null && typeof pipeline_status !== 'string') {
+    return res.status(400).json({ error: 'pipeline_status must be a string or null' });
+  }
+  try {
+    const client = getClient();
+    const result = await client.execute({
+      sql: 'UPDATE leads SET pipeline_status = ? WHERE id = ?',
+      args: [pipeline_status, req.params.id]
+    });
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update pipeline status error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

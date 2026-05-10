@@ -194,3 +194,43 @@ describe('POST /api/leads/import', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('PATCH /api/leads/:id/pipeline-status', () => {
+  test('returns 401 without auth', async () => {
+    const res = await request(app)
+      .patch('/api/leads/test-id/pipeline-status')
+      .send({ pipeline_status: 'Contacted' });
+    expect(res.status).toBe(401);
+  });
+
+  test('returns 404 if lead not found', async () => {
+    const { getClient } = require('../src/db/client');
+    getClient().execute.mockImplementationOnce(() => ({ rowsAffected: 0 }));
+    const res = await request(app)
+      .patch('/api/leads/missing/pipeline-status')
+      .set('Authorization', 'Bearer test-token')
+      .send({ pipeline_status: 'Contacted' });
+    expect(res.status).toBe(404);
+  });
+
+  test('updates pipeline status with valid label', async () => {
+    const { getClient } = require('../src/db/client');
+    getClient().execute.mockImplementationOnce(() => ({ rowsAffected: 1 }));
+    const res = await request(app)
+      .patch('/api/leads/test-id/pipeline-status')
+      .set('Authorization', 'Bearer test-token')
+      .send({ pipeline_status: 'Meeting Done' });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  test('accepts null to clear pipeline status', async () => {
+    const { getClient } = require('../src/db/client');
+    getClient().execute.mockImplementationOnce(() => ({ rowsAffected: 1 }));
+    const res = await request(app)
+      .patch('/api/leads/test-id/pipeline-status')
+      .set('Authorization', 'Bearer test-token')
+      .send({ pipeline_status: null });
+    expect(res.status).toBe(200);
+  });
+});
