@@ -4,6 +4,8 @@ const path = require('path');
 const { initDb } = require('./db/client');
 const chatRoute = require('./routes/chat');
 const leadsRoute = require('./routes/leads');
+const notesRoute = require('./routes/notes');
+const settingsRoute = require('./routes/settings');
 
 const followupRoute = require('./routes/followup');
 const marketRoute = require('./routes/market');
@@ -14,6 +16,8 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use('/api/chat', chatRoute);
 app.use('/api/leads', leadsRoute);
+app.use('/api', notesRoute);
+app.use('/api', settingsRoute);
 app.use('/api/followup', followupRoute);
 app.use('/api/market', marketRoute);
 

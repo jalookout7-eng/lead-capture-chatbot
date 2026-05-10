@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Visual Pro — Mission Control</title>
   <link rel="manifest" href="/admin/manifest.json" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -268,7 +269,7 @@
     }
     .leads-header {
       display: grid;
-      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr;
+      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr 1fr;
       gap: 8px; padding: 12px 16px;
       background: rgba(0,255,200,0.03);
       font-size: 11px; font-weight: 600;
@@ -278,7 +279,7 @@
     }
     .lead-row {
       display: grid;
-      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr;
+      grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 0.8fr 1fr 1fr;
       gap: 8px; padding: 12px 16px;
       font-size: 13px;
       border-bottom: 1px solid rgba(0,255,200,0.05);
@@ -312,6 +313,22 @@
       cursor: pointer; outline: none;
     }
     .status-select option { background: #1a1a2e; color: var(--text-primary); }
+
+    /* Pipeline column select */
+    .pipeline-select {
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-primary);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 12px;
+      max-width: 140px;
+      cursor: pointer;
+    }
+    .pipeline-select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
 
     /* Lead detail panel */
     .detail-panel {
@@ -543,6 +560,206 @@
     .ticker-price.up { color: #00ff88; }
     .ticker-price.down { color: #ff4444; }
     .ticker-price.na { color: rgba(255,255,255,0.3); }
+
+    /* Settings tab */
+    .settings-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 680px;
+    }
+    .settings-card-title {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .settings-card-desc {
+      color: var(--text-secondary);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .settings-add-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .settings-input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+    .settings-input:focus {
+      border-color: var(--accent);
+    }
+    .btn-add-status {
+      padding: 8px 18px;
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-add-status:hover { opacity: 0.85; }
+    .status-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .status-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+    .delete-status-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .delete-status-btn:hover {
+      color: var(--hot);
+      border-color: var(--hot);
+    }
+    /* Notes log (lead detail panel) */
+    .notes-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 16px;
+    }
+    .notes-empty {
+      color: var(--text-secondary);
+      font-size: 13px;
+      padding: 8px 0;
+    }
+    .note-item {
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .note-content {
+      color: var(--text-primary);
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    .note-time {
+      color: var(--text-secondary);
+      font-size: 11px;
+      margin-top: 6px;
+      font-family: var(--mono);
+    }
+    .note-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .note-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+      font-family: inherit;
+    }
+    .note-input:focus {
+      border-color: var(--accent);
+    }
+    .btn-add-note {
+      align-self: flex-start;
+      padding: 8px 16px;
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-add-note:hover { opacity: 0.85; }
+    /* Overview date filter */
+    .date-filter-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .date-filter-label {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .date-filter-btn {
+      padding: 6px 12px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .date-filter-btn:hover {
+      border-color: var(--accent);
+    }
+    .date-filter-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .custom-date-inputs {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-left: 8px;
+    }
+    .custom-date-inputs.hidden {
+      display: none;
+    }
+    .date-input {
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 4px 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color-scheme: dark;
+    }
+    .date-input:focus { outline: none; border-color: var(--accent); }
+    .date-arrow {
+      color: var(--text-secondary);
+    }
+    .pipeline-canvas {
+      max-height: 300px;
+    }
+    .chart-empty.hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -566,6 +783,7 @@
       <button id="nav-leads" class="nav-btn" onclick="showTab('leads')">Leads</button>
       <button id="nav-followups" class="nav-btn" onclick="showTab('followups')">Follow-ups</button>
       <button id="nav-export" class="nav-btn" onclick="showTab('export')">Export</button>
+      <button id="nav-settings" class="nav-btn" onclick="showTab('settings')">Settings</button>
     </nav>
 
     <!-- Main content -->
@@ -574,6 +792,17 @@
       <!-- Overview tab -->
       <div id="tab-overview" class="tab-content active">
         <h1 class="section-title">Overview</h1>
+        <div id="date-filter-bar" class="date-filter-bar">
+          <span class="date-filter-label">Period:</span>
+          <button type="button" class="date-filter-btn" data-range="7">7D</button>
+          <button type="button" class="date-filter-btn active" data-range="30">30D</button>
+          <button type="button" class="date-filter-btn" data-range="custom">Custom</button>
+          <div id="custom-date-inputs" class="custom-date-inputs hidden">
+            <input id="date-from" type="date" class="date-input">
+            <span class="date-arrow">→</span>
+            <input id="date-to" type="date" class="date-input">
+          </div>
+        </div>
         <div class="stats-grid">
           <div class="stat-card">
             <div id="stat-total" class="stat-number stat-total">--</div>
@@ -596,6 +825,11 @@
           <div class="chart-title">Leads per day</div>
           <div id="chart" class="chart-area"></div>
         </div>
+        <div class="chart-panel">
+          <div class="chart-title">Pipeline Breakdown</div>
+          <div id="pipeline-chart-empty" class="chart-empty hidden">No pipeline data for this period.</div>
+          <canvas id="pipeline-chart" class="pipeline-canvas"></canvas>
+        </div>
       </div>
 
       <!-- Leads tab -->
@@ -615,6 +849,7 @@
             <span>Score</span>
             <span class="col-notes">Notes</span>
             <span>Status</span>
+            <span class="col-pipeline">Pipeline</span>
           </div>
           <div id="leads-table-body"></div>
         </div>
@@ -634,6 +869,20 @@
           <p class="export-text">Download all leads as a CSV file including phone numbers and notes.</p>
           <button class="btn-export" onclick="downloadCsv()">Download CSV</button>
         </div>
+      </div>
+
+      <!-- Settings tab -->
+      <div id="tab-settings" class="tab-content">
+        <h1 class="section-title">Settings</h1>
+        <section class="settings-card">
+          <h2 class="settings-card-title">Pipeline Statuses</h2>
+          <p class="settings-card-desc">Configurable labels for the lead pipeline column. Deleting an option does not change leads that already have that label.</p>
+          <div class="settings-add-row">
+            <input id="newStatusInput" type="text" class="settings-input" placeholder="New status label">
+            <button id="addStatusBtn" class="btn-add-status">Add</button>
+          </div>
+          <ul id="statusList" class="status-list"></ul>
+        </section>
       </div>
 
       <!-- Mission Control Feed -->
@@ -677,6 +926,7 @@
       <button id="mob-leads" class="mob-btn" onclick="showTab('leads')">Leads</button>
       <button id="mob-followups" class="mob-btn" onclick="showTab('followups')">Follow-ups</button>
       <button id="mob-export" class="mob-btn" onclick="showTab('export')">Export</button>
+      <button id="mob-settings" class="mob-btn" onclick="showTab('settings')">Settings</button>
     </div>
   </div>
 
@@ -766,29 +1016,88 @@
       // Load data for relevant tabs
       if (name === 'leads') renderLeads();
       if (name === 'followups') renderFollowups();
+      if (name === 'settings') loadSettings();
     }
 
     /* =========================================
-       STATS (Overview tab) — BUG FIX
+       STATS (Overview tab)
        ========================================= */
+    var pipelineChartInstance = null;
+    var currentDateRange = { mode: '30', from: null, to: null };
+
+    function isoDate(d) {
+      return d.toISOString().slice(0, 10);
+    }
+
     async function loadStats() {
       try {
-        var res = await fetch('/api/leads/stats', { headers: authHeaders() });
+        var url = '/api/leads/stats';
+        if (currentDateRange.mode === '7' || currentDateRange.mode === '30') {
+          var to = new Date();
+          var from = new Date();
+          from.setDate(to.getDate() - parseInt(currentDateRange.mode, 10) + 1);
+          url += '?from=' + isoDate(from) + '&to=' + isoDate(to);
+        } else if (currentDateRange.mode === 'custom' && currentDateRange.from && currentDateRange.to) {
+          url += '?from=' + currentDateRange.from + '&to=' + currentDateRange.to;
+        }
+
+        var res = await fetch(url, { headers: authHeaders() });
         if (handleAuthError(res)) return;
         if (!res.ok) throw new Error('Failed to load stats');
         var data = await res.json();
 
-        // Update stat cards with actual numbers
         document.getElementById('stat-total').textContent = data.total != null ? data.total : 0;
         document.getElementById('stat-hot').textContent = data.hot != null ? data.hot : 0;
         document.getElementById('stat-warm').textContent = data.warm != null ? data.warm : 0;
         document.getElementById('stat-cold').textContent = data.cold != null ? data.cold : 0;
 
-        // Render bar chart
-        renderChart(data.leadsByDay || []);
+        renderChart(data.byDay || []);
+        renderPipelineChart(data.pipelineBreakdown || []);
       } catch (e) {
         console.error('Stats error:', e);
       }
+    }
+
+    function renderPipelineChart(rows) {
+      var canvas = document.getElementById('pipeline-chart');
+      var empty = document.getElementById('pipeline-chart-empty');
+      if (!canvas || typeof Chart === 'undefined') return;
+
+      if (!rows.length) {
+        canvas.style.display = 'none';
+        if (empty) empty.classList.remove('hidden');
+        if (pipelineChartInstance) {
+          pipelineChartInstance.destroy();
+          pipelineChartInstance = null;
+        }
+        return;
+      }
+      canvas.style.display = 'block';
+      if (empty) empty.classList.add('hidden');
+
+      if (pipelineChartInstance) pipelineChartInstance.destroy();
+
+      pipelineChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: rows.map(function (r) { return r.label; }),
+          datasets: [{
+            label: 'Leads',
+            data: rows.map(function (r) { return r.count; }),
+            backgroundColor: '#00ffc8',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: 'rgba(255,255,255,0.5)', precision: 0 }, grid: { color: 'rgba(0,255,200,0.1)' } },
+            y: { ticks: { color: 'rgba(255,255,255,0.9)' }, grid: { display: false } }
+          }
+        }
+      });
     }
 
     function renderChart(days) {
@@ -825,6 +1134,88 @@
         col.appendChild(label);
         chart.appendChild(col);
       });
+    }
+
+    /* =========================================
+       OVERVIEW DATE FILTER WIRING
+       ========================================= */
+    document.addEventListener('DOMContentLoaded', function () {
+      var btns = document.querySelectorAll('.date-filter-btn');
+      btns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var range = btn.dataset.range;
+          btns.forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+
+          var customInputs = document.getElementById('custom-date-inputs');
+          if (range === 'custom') {
+            customInputs.classList.remove('hidden');
+            currentDateRange = { mode: 'custom', from: null, to: null };
+          } else {
+            customInputs.classList.add('hidden');
+            currentDateRange = { mode: range, from: null, to: null };
+            loadStats();
+          }
+        });
+      });
+
+      var dateFrom = document.getElementById('date-from');
+      var dateTo = document.getElementById('date-to');
+      function maybeApplyCustom() {
+        var f = dateFrom.value;
+        var t = dateTo.value;
+        if (f && t) {
+          currentDateRange = { mode: 'custom', from: f, to: t };
+          loadStats();
+        }
+      }
+      if (dateFrom) dateFrom.addEventListener('change', maybeApplyCustom);
+      if (dateTo) dateTo.addEventListener('change', maybeApplyCustom);
+    });
+
+    /* =========================================
+       PIPELINE STATUS CACHE
+       ========================================= */
+    var pipelineStatusCache = [];
+
+    async function loadPipelineStatusCache() {
+      try {
+        var res = await fetch('/api/settings/pipeline-statuses', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          pipelineStatusCache = [];
+          return;
+        }
+        var data = await res.json();
+        pipelineStatusCache = data.statuses || [];
+        // If the leads table is currently rendered, re-render so dropdowns refresh
+        var body = document.getElementById('leads-table-body');
+        if (body && body.children.length > 0) {
+          renderLeads();
+        }
+      } catch (err) {
+        console.error('loadPipelineStatusCache error:', err);
+        pipelineStatusCache = [];
+      }
+    }
+
+    async function updatePipeline(leadId, label) {
+      try {
+        var res = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/pipeline-status', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ pipeline_status: label || null })
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          alert('Failed to update pipeline status.');
+          return;
+        }
+        var lead = allLeads.find(function (l) { return l.id === leadId; });
+        if (lead) lead.pipeline_status = label || null;
+      } catch (err) {
+        console.error('updatePipeline error:', err);
+      }
     }
 
     /* =========================================
@@ -918,12 +1309,30 @@
         statusSel.onclick = function (e) { e.stopPropagation(); };
         statusSel.onchange = function (e) { updateStatus(lead.id, e.target.value); };
 
+        var pipelineSel = document.createElement('select');
+        pipelineSel.className = 'pipeline-select';
+        var noneOpt = document.createElement('option');
+        noneOpt.value = '';
+        noneOpt.textContent = '—';
+        if (!lead.pipeline_status) noneOpt.selected = true;
+        pipelineSel.appendChild(noneOpt);
+        pipelineStatusCache.forEach(function (s) {
+          var opt = document.createElement('option');
+          opt.value = s.label;
+          opt.textContent = s.label;
+          if (s.label === lead.pipeline_status) opt.selected = true;
+          pipelineSel.appendChild(opt);
+        });
+        pipelineSel.onclick = function (e) { e.stopPropagation(); };
+        pipelineSel.onchange = function (e) { updatePipeline(lead.id, e.target.value); };
+
         row.appendChild(name);
         row.appendChild(email);
         row.appendChild(product);
         row.appendChild(score);
         row.appendChild(notesPreview);
         row.appendChild(statusSel);
+        row.appendChild(pipelineSel);
         body.appendChild(row);
       });
     }
@@ -1026,17 +1435,34 @@
         });
         panel.appendChild(statusSelect);
 
-        // Notes
+        // Notes log (notes-log section)
         var notesTitle = document.createElement('div');
         notesTitle.className = 'detail-section-title';
         notesTitle.textContent = 'Notes';
         panel.appendChild(notesTitle);
-        var notesArea = document.createElement('textarea');
-        notesArea.className = 'notes-textarea';
-        notesArea.rows = 3;
-        notesArea.value = data.notes || '';
-        notesArea.placeholder = 'Add notes about this lead...';
-        panel.appendChild(notesArea);
+
+        var notesList = document.createElement('ul');
+        notesList.id = 'notes-list-' + id;
+        notesList.className = 'notes-list';
+        panel.appendChild(notesList);
+
+        var noteForm = document.createElement('div');
+        noteForm.className = 'note-form';
+        var noteInput = document.createElement('textarea');
+        noteInput.id = 'new-note-input-' + id;
+        noteInput.className = 'note-input';
+        noteInput.rows = 3;
+        noteInput.placeholder = 'Add a note (date and time will be stamped automatically)';
+        noteForm.appendChild(noteInput);
+        var addNoteBtn = document.createElement('button');
+        addNoteBtn.className = 'btn-add-note';
+        addNoteBtn.textContent = 'Add Note';
+        addNoteBtn.onclick = function () { addNote(id); };
+        noteForm.appendChild(addNoteBtn);
+        panel.appendChild(noteForm);
+
+        // Load notes from API
+        loadNotes(id);
 
         // Save button + feedback
         var saveRow = document.createElement('div');
@@ -1050,20 +1476,14 @@
           saveBtn.disabled = true;
           saveBtn.textContent = 'Saving...';
           try {
-            var results = await Promise.all([
-              fetch('/api/leads/' + id + '/notes', {
-                method: 'PATCH', headers: authHeaders(),
-                body: JSON.stringify({ notes: notesArea.value })
-              }),
-              fetch('/api/leads/' + id + '/status', {
-                method: 'PATCH', headers: authHeaders(),
-                body: JSON.stringify({ status: statusSelect.value })
-              })
-            ]);
-            if (handleAuthError(results[0]) || handleAuthError(results[1])) return;
-            if (!results[0].ok || !results[1].ok) throw new Error('Save failed');
+            var res = await fetch('/api/leads/' + id + '/status', {
+              method: 'PATCH', headers: authHeaders(),
+              body: JSON.stringify({ status: statusSelect.value })
+            });
+            if (handleAuthError(res)) return;
+            if (!res.ok) throw new Error('Save failed');
             var lead = allLeads.find(function (l) { return l.id === id; });
-            if (lead) { lead.notes = notesArea.value; lead.status = statusSelect.value; }
+            if (lead) { lead.status = statusSelect.value; }
             renderLeads();
             saveFeedback.textContent = 'Saved';
             saveFeedback.style.color = 'var(--accent)';
@@ -1528,7 +1948,7 @@
        ========================================= */
     async function init() {
       if (!checkAuth()) return;
-      await Promise.all([loadStats(), loadLeads()]);
+      await Promise.all([loadStats(), loadLeads(), loadPipelineStatusCache()]);
       showTab('overview');
       loadFeed();
       setInterval(loadMarket, 3600000);
@@ -1542,6 +1962,164 @@
     }
 
     init();
+
+    /* =========================================
+       SETTINGS — Pipeline Statuses
+       ========================================= */
+    async function loadSettings() {
+      try {
+        var res = await fetch('/api/settings/pipeline-statuses', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) return;
+        var data = await res.json();
+        renderStatusList(data.statuses || []);
+      } catch (err) {
+        console.error('loadSettings error:', err);
+      }
+    }
+
+    function renderStatusList(statuses) {
+      var list = document.getElementById('statusList');
+      if (!list) return;
+      list.innerHTML = '';
+      statuses.forEach(function (s) {
+        var li = document.createElement('li');
+        li.className = 'status-list-item';
+        li.innerHTML =
+          '<span>' + escapeHtml(s.label) + '</span>' +
+          '<button data-id="' + s.id + '" class="delete-status-btn">Delete</button>';
+        list.appendChild(li);
+      });
+      document.querySelectorAll('.delete-status-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { deleteStatus(btn.dataset.id); });
+      });
+    }
+
+    async function addStatus() {
+      var input = document.getElementById('newStatusInput');
+      var label = input.value.trim();
+      if (!label) return;
+      try {
+        var res = await fetch('/api/settings/pipeline-statuses', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ label: label })
+        });
+        if (handleAuthError(res)) return;
+        if (res.status === 409) {
+          alert('A status with that label already exists.');
+          return;
+        }
+        if (!res.ok) {
+          alert('Failed to add status.');
+          return;
+        }
+        input.value = '';
+        await loadSettings();
+        if (typeof loadPipelineStatusCache === 'function') {
+          await loadPipelineStatusCache();
+        }
+      } catch (err) {
+        console.error('addStatus error:', err);
+      }
+    }
+
+    async function deleteStatus(id) {
+      if (!confirm('Delete this status? Existing leads will keep their label as a free-text value.')) return;
+      try {
+        var res = await fetch('/api/settings/pipeline-statuses/' + encodeURIComponent(id), {
+          method: 'DELETE',
+          headers: authHeaders()
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          alert('Failed to delete status.');
+          return;
+        }
+        await loadSettings();
+        if (typeof loadPipelineStatusCache === 'function') {
+          await loadPipelineStatusCache();
+        }
+      } catch (err) {
+        console.error('deleteStatus error:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var addBtn = document.getElementById('addStatusBtn');
+      if (addBtn) addBtn.addEventListener('click', addStatus);
+      var input = document.getElementById('newStatusInput');
+      if (input) {
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') addStatus();
+        });
+      }
+    });
+
+    /* =========================================
+       NOTES LOG (per-lead)
+       ========================================= */
+    async function loadNotes(leadId) {
+      try {
+        var res = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/notes', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) return;
+        var data = await res.json();
+        renderNotes(leadId, data.notes || []);
+      } catch (err) {
+        console.error('loadNotes error:', err);
+      }
+    }
+
+    function renderNotes(leadId, notes) {
+      var list = document.getElementById('notes-list-' + leadId);
+      if (!list) return;
+      if (!notes.length) {
+        list.innerHTML = '<li class="notes-empty">No notes yet.</li>';
+        return;
+      }
+      list.innerHTML = notes.map(function (n) {
+        return '<li class="note-item">' +
+          '<div class="note-content">' + escapeHtml(n.content) + '</div>' +
+          '<div class="note-time">' + escapeHtml(formatNoteDate(n.created_at)) + '</div>' +
+          '</li>';
+      }).join('');
+    }
+
+    function formatNoteDate(iso) {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var dd = String(d.getDate()).padStart(2, '0');
+      var mm = months[d.getMonth()];
+      var yyyy = d.getFullYear();
+      var hh = String(d.getHours()).padStart(2, '0');
+      var mi = String(d.getMinutes()).padStart(2, '0');
+      return dd + ' ' + mm + ' ' + yyyy + ', ' + hh + ':' + mi;
+    }
+
+    async function addNote(leadId) {
+      var ta = document.getElementById('new-note-input-' + leadId);
+      if (!ta) return;
+      var content = ta.value.trim();
+      if (!content) return;
+      try {
+        var res = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/notes', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ content: content })
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          alert('Failed to add note.');
+          return;
+        }
+        ta.value = '';
+        await loadNotes(leadId);
+      } catch (err) {
+        console.error('addNote error:', err);
+      }
+    }
   </script>
 </body>
 </html>
