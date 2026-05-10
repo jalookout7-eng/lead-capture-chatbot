@@ -566,6 +566,7 @@
       <button id="nav-leads" class="nav-btn" onclick="showTab('leads')">Leads</button>
       <button id="nav-followups" class="nav-btn" onclick="showTab('followups')">Follow-ups</button>
       <button id="nav-export" class="nav-btn" onclick="showTab('export')">Export</button>
+      <button id="nav-settings" class="nav-btn" onclick="showTab('settings')">Settings</button>
     </nav>
 
     <!-- Main content -->
@@ -636,6 +637,20 @@
         </div>
       </div>
 
+      <!-- Settings tab -->
+      <div id="tab-settings" class="tab-content">
+        <h1 class="section-title">Settings</h1>
+        <section style="background:#1c1c1e;border:1px solid #3a3a3c;border-radius:12px;padding:24px;max-width:680px;">
+          <h2 style="margin:0 0 8px;font-size:18px;color:#fff;">Pipeline Statuses</h2>
+          <p style="margin:0 0 16px;color:#86868b;font-size:13px;">Configurable labels for the lead pipeline column. Deleting an option does not change leads that already have that label.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <input id="newStatusInput" type="text" placeholder="New status label" style="flex:1;padding:8px 12px;background:#0a0a0a;border:1px solid #3a3a3c;border-radius:8px;color:#fff;font-size:14px;">
+            <button id="addStatusBtn" style="padding:8px 16px;background:#0066cc;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Add</button>
+          </div>
+          <ul id="statusList" style="list-style:none;padding:0;margin:0;"></ul>
+        </section>
+      </div>
+
       <!-- Mission Control Feed -->
       <div class="feed-section">
         <div class="feed-title">// Mission Control Feed</div>
@@ -677,6 +692,7 @@
       <button id="mob-leads" class="mob-btn" onclick="showTab('leads')">Leads</button>
       <button id="mob-followups" class="mob-btn" onclick="showTab('followups')">Follow-ups</button>
       <button id="mob-export" class="mob-btn" onclick="showTab('export')">Export</button>
+      <button id="mob-settings" class="mob-btn" onclick="showTab('settings')">Settings</button>
     </div>
   </div>
 
@@ -766,6 +782,7 @@
       // Load data for relevant tabs
       if (name === 'leads') renderLeads();
       if (name === 'followups') renderFollowups();
+      if (name === 'settings') loadSettings();
     }
 
     /* =========================================
@@ -1542,6 +1559,99 @@
     }
 
     init();
+
+    /* =========================================
+       SETTINGS — Pipeline Statuses
+       ========================================= */
+    async function loadSettings() {
+      try {
+        var res = await fetch('/api/settings/pipeline-statuses', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) return;
+        var data = await res.json();
+        renderStatusList(data.statuses || []);
+      } catch (err) {
+        console.error('loadSettings error:', err);
+      }
+    }
+
+    function renderStatusList(statuses) {
+      var list = document.getElementById('statusList');
+      if (!list) return;
+      list.innerHTML = '';
+      statuses.forEach(function (s) {
+        var li = document.createElement('li');
+        li.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#0a0a0a;border:1px solid #3a3a3c;border-radius:8px;margin-bottom:8px;';
+        li.innerHTML =
+          '<span style="color:#fff;">' + escapeHtml(s.label) + '</span>' +
+          '<button data-id="' + s.id + '" class="delete-status-btn" style="background:#3a3a3c;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;">Delete</button>';
+        list.appendChild(li);
+      });
+      document.querySelectorAll('.delete-status-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { deleteStatus(btn.dataset.id); });
+      });
+    }
+
+    async function addStatus() {
+      var input = document.getElementById('newStatusInput');
+      var label = input.value.trim();
+      if (!label) return;
+      try {
+        var res = await fetch('/api/settings/pipeline-statuses', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ label: label })
+        });
+        if (handleAuthError(res)) return;
+        if (res.status === 409) {
+          alert('A status with that label already exists.');
+          return;
+        }
+        if (!res.ok) {
+          alert('Failed to add status.');
+          return;
+        }
+        input.value = '';
+        await loadSettings();
+        if (typeof loadPipelineStatusCache === 'function') {
+          await loadPipelineStatusCache();
+        }
+      } catch (err) {
+        console.error('addStatus error:', err);
+      }
+    }
+
+    async function deleteStatus(id) {
+      if (!confirm('Delete this status? Existing leads will keep their label as a free-text value.')) return;
+      try {
+        var res = await fetch('/api/settings/pipeline-statuses/' + encodeURIComponent(id), {
+          method: 'DELETE',
+          headers: authHeaders()
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          alert('Failed to delete status.');
+          return;
+        }
+        await loadSettings();
+        if (typeof loadPipelineStatusCache === 'function') {
+          await loadPipelineStatusCache();
+        }
+      } catch (err) {
+        console.error('deleteStatus error:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var addBtn = document.getElementById('addStatusBtn');
+      if (addBtn) addBtn.addEventListener('click', addStatus);
+      var input = document.getElementById('newStatusInput');
+      if (input) {
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') addStatus();
+        });
+      }
+    });
   </script>
 </body>
 </html>
