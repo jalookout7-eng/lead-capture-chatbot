@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Visual Pro — Mission Control</title>
   <link rel="manifest" href="/admin/manifest.json" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -699,6 +700,63 @@
       font-size: 13px;
     }
     .btn-add-note:hover { opacity: 0.85; }
+    /* Overview date filter */
+    .date-filter-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .date-filter-label {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .date-filter-btn {
+      padding: 6px 12px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .date-filter-btn:hover {
+      border-color: var(--accent);
+    }
+    .date-filter-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .custom-date-inputs {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-left: 8px;
+    }
+    .custom-date-inputs.hidden {
+      display: none;
+    }
+    .date-input {
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 4px 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color-scheme: dark;
+    }
+    .date-input:focus { outline: none; border-color: var(--accent); }
+    .date-arrow {
+      color: var(--text-secondary);
+    }
+    .pipeline-canvas {
+      max-height: 300px;
+    }
   </style>
 </head>
 <body>
@@ -731,6 +789,17 @@
       <!-- Overview tab -->
       <div id="tab-overview" class="tab-content active">
         <h1 class="section-title">Overview</h1>
+        <div id="date-filter-bar" class="date-filter-bar">
+          <span class="date-filter-label">Period:</span>
+          <button type="button" class="date-filter-btn" data-range="7">7D</button>
+          <button type="button" class="date-filter-btn active" data-range="30">30D</button>
+          <button type="button" class="date-filter-btn" data-range="custom">Custom</button>
+          <div id="custom-date-inputs" class="custom-date-inputs hidden">
+            <input id="date-from" type="date" class="date-input">
+            <span class="date-arrow">→</span>
+            <input id="date-to" type="date" class="date-input">
+          </div>
+        </div>
         <div class="stats-grid">
           <div class="stat-card">
             <div id="stat-total" class="stat-number stat-total">--</div>
@@ -752,6 +821,11 @@
         <div class="chart-panel">
           <div class="chart-title">Leads per day</div>
           <div id="chart" class="chart-area"></div>
+        </div>
+        <div class="chart-panel">
+          <div class="chart-title">Pipeline Breakdown</div>
+          <div id="pipeline-chart-empty" class="chart-empty hidden">No pipeline data for this period.</div>
+          <canvas id="pipeline-chart" class="pipeline-canvas"></canvas>
         </div>
       </div>
 
@@ -943,26 +1017,84 @@
     }
 
     /* =========================================
-       STATS (Overview tab) — BUG FIX
+       STATS (Overview tab)
        ========================================= */
+    var pipelineChartInstance = null;
+    var currentDateRange = { mode: '30', from: null, to: null };
+
+    function isoDate(d) {
+      return d.toISOString().slice(0, 10);
+    }
+
     async function loadStats() {
       try {
-        var res = await fetch('/api/leads/stats', { headers: authHeaders() });
+        var url = '/api/leads/stats';
+        if (currentDateRange.mode === '7' || currentDateRange.mode === '30') {
+          var to = new Date();
+          var from = new Date();
+          from.setDate(to.getDate() - parseInt(currentDateRange.mode, 10) + 1);
+          url += '?from=' + isoDate(from) + '&to=' + isoDate(to);
+        } else if (currentDateRange.mode === 'custom' && currentDateRange.from && currentDateRange.to) {
+          url += '?from=' + currentDateRange.from + '&to=' + currentDateRange.to;
+        }
+
+        var res = await fetch(url, { headers: authHeaders() });
         if (handleAuthError(res)) return;
         if (!res.ok) throw new Error('Failed to load stats');
         var data = await res.json();
 
-        // Update stat cards with actual numbers
         document.getElementById('stat-total').textContent = data.total != null ? data.total : 0;
         document.getElementById('stat-hot').textContent = data.hot != null ? data.hot : 0;
         document.getElementById('stat-warm').textContent = data.warm != null ? data.warm : 0;
         document.getElementById('stat-cold').textContent = data.cold != null ? data.cold : 0;
 
-        // Render bar chart
-        renderChart(data.leadsByDay || []);
+        renderChart(data.byDay || []);
+        renderPipelineChart(data.pipelineBreakdown || []);
       } catch (e) {
         console.error('Stats error:', e);
       }
+    }
+
+    function renderPipelineChart(rows) {
+      var canvas = document.getElementById('pipeline-chart');
+      var empty = document.getElementById('pipeline-chart-empty');
+      if (!canvas || typeof Chart === 'undefined') return;
+
+      if (!rows.length) {
+        canvas.style.display = 'none';
+        if (empty) empty.classList.remove('hidden');
+        if (pipelineChartInstance) {
+          pipelineChartInstance.destroy();
+          pipelineChartInstance = null;
+        }
+        return;
+      }
+      canvas.style.display = 'block';
+      if (empty) empty.classList.add('hidden');
+
+      if (pipelineChartInstance) pipelineChartInstance.destroy();
+
+      pipelineChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: rows.map(function (r) { return r.label; }),
+          datasets: [{
+            label: 'Leads',
+            data: rows.map(function (r) { return r.count; }),
+            backgroundColor: '#00ffc8',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: 'rgba(255,255,255,0.5)', precision: 0 }, grid: { color: 'rgba(0,255,200,0.1)' } },
+            y: { ticks: { color: 'rgba(255,255,255,0.9)' }, grid: { display: false } }
+          }
+        }
+      });
     }
 
     function renderChart(days) {
@@ -1000,6 +1132,43 @@
         chart.appendChild(col);
       });
     }
+
+    /* =========================================
+       OVERVIEW DATE FILTER WIRING
+       ========================================= */
+    document.addEventListener('DOMContentLoaded', function () {
+      var btns = document.querySelectorAll('.date-filter-btn');
+      btns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var range = btn.dataset.range;
+          btns.forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+
+          var customInputs = document.getElementById('custom-date-inputs');
+          if (range === 'custom') {
+            customInputs.classList.remove('hidden');
+            currentDateRange = { mode: 'custom', from: null, to: null };
+          } else {
+            customInputs.classList.add('hidden');
+            currentDateRange = { mode: range, from: null, to: null };
+            loadStats();
+          }
+        });
+      });
+
+      var dateFrom = document.getElementById('date-from');
+      var dateTo = document.getElementById('date-to');
+      function maybeApplyCustom() {
+        var f = dateFrom.value;
+        var t = dateTo.value;
+        if (f && t) {
+          currentDateRange = { mode: 'custom', from: f, to: t };
+          loadStats();
+        }
+      }
+      if (dateFrom) dateFrom.addEventListener('change', maybeApplyCustom);
+      if (dateTo) dateTo.addEventListener('change', maybeApplyCustom);
+    });
 
     /* =========================================
        PIPELINE STATUS CACHE
