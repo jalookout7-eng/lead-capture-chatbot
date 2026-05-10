@@ -234,3 +234,84 @@ describe('PATCH /api/leads/:id/pipeline-status', () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe('GET /api/leads/stats — extended', () => {
+  const { getClient } = require('../src/db/client');
+
+  beforeEach(() => {
+    getClient().execute.mockReset();
+  });
+
+  test('returns 401 without auth', async () => {
+    const res = await request(app).get('/api/leads/stats');
+    expect(res.status).toBe(401);
+  });
+
+  test('returns byDay field (renamed from leadsByDay)', async () => {
+    getClient().execute.mockImplementation(({ sql }) => {
+      if (/COUNT.*FROM leads(?!_)/i.test(sql) && !/score/i.test(sql) && !/pipeline_status/i.test(sql)) {
+        return { rows: [{ count: 10 }] };
+      }
+      if (/score = 'hot'/.test(sql)) return { rows: [{ count: 3 }] };
+      if (/score = 'warm'/.test(sql)) return { rows: [{ count: 4 }] };
+      if (/score = 'cold'/.test(sql)) return { rows: [{ count: 3 }] };
+      if (/GROUP BY date/i.test(sql)) {
+        return { rows: [{ date: '2026-05-09', count: 5 }, { date: '2026-05-08', count: 5 }] };
+      }
+      if (/GROUP BY pipeline_status/i.test(sql)) {
+        return { rows: [] };
+      }
+      return { rows: [] };
+    });
+    const res = await request(app).get('/api/leads/stats').set('Authorization', 'Bearer test-token');
+    expect(res.status).toBe(200);
+    expect(res.body.byDay).toBeDefined();
+    expect(res.body.byDay).toHaveLength(2);
+    expect(res.body.leadsByDay).toBeUndefined();
+  });
+
+  test('returns pipelineBreakdown with non-null statuses only, ordered DESC', async () => {
+    getClient().execute.mockImplementation(({ sql }) => {
+      if (/COUNT.*FROM leads(?!_)/i.test(sql) && !/score/i.test(sql) && !/pipeline_status/i.test(sql)) {
+        return { rows: [{ count: 20 }] };
+      }
+      if (/score = 'hot'/.test(sql)) return { rows: [{ count: 8 }] };
+      if (/score = 'warm'/.test(sql)) return { rows: [{ count: 7 }] };
+      if (/score = 'cold'/.test(sql)) return { rows: [{ count: 5 }] };
+      if (/GROUP BY date/i.test(sql)) return { rows: [] };
+      if (/GROUP BY pipeline_status/i.test(sql)) {
+        return {
+          rows: [
+            { label: 'Email Sent', count: 8 },
+            { label: 'Meeting Done', count: 3 }
+          ]
+        };
+      }
+      return { rows: [] };
+    });
+    const res = await request(app).get('/api/leads/stats').set('Authorization', 'Bearer test-token');
+    expect(res.status).toBe(200);
+    expect(res.body.pipelineBreakdown).toEqual([
+      { label: 'Email Sent', count: 8 },
+      { label: 'Meeting Done', count: 3 }
+    ]);
+  });
+
+  test('accepts from and to query parameters and passes them to query args', async () => {
+    let capturedArgs = null;
+    getClient().execute.mockImplementation((arg) => {
+      if (typeof arg === 'object' && arg.sql && /BETWEEN/i.test(arg.sql)) {
+        capturedArgs = arg.args;
+      }
+      if (typeof arg === 'object' && /COUNT.*FROM leads/i.test(arg.sql) && !/score/i.test(arg.sql) && !/pipeline_status/i.test(arg.sql)) {
+        return { rows: [{ count: 5 }] };
+      }
+      return { rows: [] };
+    });
+    const res = await request(app)
+      .get('/api/leads/stats?from=2026-05-01&to=2026-05-09')
+      .set('Authorization', 'Bearer test-token');
+    expect(res.status).toBe(200);
+    expect(capturedArgs).toEqual(['2026-05-01T00:00:00.000Z', '2026-05-09T23:59:59.999Z']);
+  });
+});

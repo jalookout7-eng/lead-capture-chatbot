@@ -133,23 +133,65 @@ router.post('/import', requireAuth, async (req, res) => {
   res.json({ imported, errors });
 });
 
-// GET /api/stats — dashboard stats (admin) — must be before /:id
+// GET /api/leads/stats — dashboard stats with optional date filter (admin) — must be before /:id
 router.get('/stats', requireAuth, async (req, res) => {
   try {
     const client = getClient();
-    const total = await client.execute('SELECT COUNT(*) as count FROM leads');
-    const hot = await client.execute("SELECT COUNT(*) as count FROM leads WHERE score = 'hot'");
-    const warm = await client.execute("SELECT COUNT(*) as count FROM leads WHERE score = 'warm'");
-    const cold = await client.execute("SELECT COUNT(*) as count FROM leads WHERE score = 'cold'");
-    const byDay = await client.execute(
-      "SELECT substr(created_at, 1, 10) as date, COUNT(*) as count FROM leads GROUP BY date ORDER BY date DESC LIMIT 30"
-    );
+    const { from, to } = req.query;
+
+    // Build optional BETWEEN clause. If both from and to are provided, parse them as
+    // inclusive date ranges (00:00:00 to 23:59:59 of the respective dates).
+    let whereDate = '';
+    const dateArgs = [];
+    if (from && to) {
+      whereDate = ' WHERE created_at BETWEEN ? AND ?';
+      dateArgs.push(
+        new Date(from + 'T00:00:00Z').toISOString(),
+        new Date(to + 'T23:59:59.999Z').toISOString()
+      );
+    }
+
+    const total = await client.execute({
+      sql: `SELECT COUNT(*) as count FROM leads${whereDate}`,
+      args: dateArgs
+    });
+    const hot = await client.execute({
+      sql: `SELECT COUNT(*) as count FROM leads WHERE score = 'hot'${whereDate ? ' AND created_at BETWEEN ? AND ?' : ''}`,
+      args: dateArgs
+    });
+    const warm = await client.execute({
+      sql: `SELECT COUNT(*) as count FROM leads WHERE score = 'warm'${whereDate ? ' AND created_at BETWEEN ? AND ?' : ''}`,
+      args: dateArgs
+    });
+    const cold = await client.execute({
+      sql: `SELECT COUNT(*) as count FROM leads WHERE score = 'cold'${whereDate ? ' AND created_at BETWEEN ? AND ?' : ''}`,
+      args: dateArgs
+    });
+
+    const byDay = await client.execute({
+      sql: `SELECT substr(created_at, 1, 10) as date, COUNT(*) as count
+            FROM leads${whereDate}
+            GROUP BY date ORDER BY date DESC
+            LIMIT 60`,
+      args: dateArgs
+    });
+
+    const pipelineBreakdown = await client.execute({
+      sql: `SELECT pipeline_status as label, COUNT(*) as count
+            FROM leads
+            WHERE pipeline_status IS NOT NULL${whereDate ? ' AND created_at BETWEEN ? AND ?' : ''}
+            GROUP BY pipeline_status
+            ORDER BY count DESC`,
+      args: dateArgs
+    });
+
     res.json({
-      total: total.rows[0].count,
-      hot: hot.rows[0].count,
-      warm: warm.rows[0].count,
-      cold: cold.rows[0].count,
-      leadsByDay: byDay.rows
+      total: total.rows[0]?.count ?? 0,
+      hot: hot.rows[0]?.count ?? 0,
+      warm: warm.rows[0]?.count ?? 0,
+      cold: cold.rows[0]?.count ?? 0,
+      byDay: byDay.rows,
+      pipelineBreakdown: pipelineBreakdown.rows
     });
   } catch (err) {
     console.error('Stats error:', err);
