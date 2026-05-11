@@ -801,6 +801,81 @@
     .pipeline-canvas {
       max-height: 300px;
     }
+    .nav-badge {
+      display: none;
+      background: var(--hot);
+      color: #fff;
+      border-radius: 9px;
+      padding: 1px 6px;
+      font-size: 10px;
+      margin-left: 6px;
+      min-width: 16px;
+      text-align: center;
+      vertical-align: middle;
+      font-family: var(--mono);
+    }
+    .nav-badge.visible {
+      display: inline-block;
+    }
+    .toast-stack {
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      width: 320px;
+      max-width: calc(100vw - 32px);
+      background: rgba(28, 28, 30, 0.95);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: var(--text-primary);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      transform: translateX(120%);
+      opacity: 0;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .toast.visible {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .toast-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .toast-meta {
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+    }
+    .toast-link {
+      color: var(--accent);
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .toast-link:hover { text-decoration: underline; }
+    .score-pill {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 6px;
+    }
+    .score-pill.hot { background: rgba(255,50,50,0.2); color: var(--hot); }
+    .score-pill.warm { background: rgba(255,180,0,0.2); color: var(--warm); }
+    .score-pill.cold { background: rgba(0,255,200,0.15); color: var(--cold); }
     .chart-empty.hidden {
       display: none;
     }
@@ -824,7 +899,7 @@
     <nav class="sidebar">
       <div class="sidebar-title">3D VISUAL PRO</div>
       <button id="nav-overview" class="nav-btn active" onclick="showTab('overview')">Overview</button>
-      <button id="nav-leads" class="nav-btn" onclick="showTab('leads')">Leads</button>
+      <button id="nav-leads" class="nav-btn" onclick="showTab('leads')">Leads<span id="leads-badge" class="nav-badge"></span></button>
       <button id="nav-followups" class="nav-btn" onclick="showTab('followups')">Follow-ups</button>
       <button id="nav-export" class="nav-btn" onclick="showTab('export')">Export</button>
       <button id="nav-settings" class="nav-btn" onclick="showTab('settings')">Settings</button>
@@ -1015,6 +1090,7 @@
   </div>
 
   <!-- Mobile nav -->
+  <div id="toast-stack" class="toast-stack"></div>
   <div class="mobile-nav">
     <div class="mobile-nav-inner">
       <button id="mob-overview" class="mob-btn active" onclick="showTab('overview')" aria-label="Overview">
@@ -1023,7 +1099,7 @@
       </button>
       <button id="mob-leads" class="mob-btn" onclick="showTab('leads')" aria-label="Leads">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Leads</span>
+        <span>Leads<span id="leads-badge-mobile" class="nav-badge"></span></span>
       </button>
       <button id="mob-followups" class="mob-btn" onclick="showTab('followups')" aria-label="Follow-ups">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -2062,6 +2138,7 @@
       showTab('overview');
       loadFeed();
       setInterval(loadMarket, 3600000);
+      startPolling();
     }
 
     // Service worker
@@ -2383,6 +2460,117 @@
         console.error('disablePush error:', err);
       }
     }
+
+    /* =========================================
+       LEADS POLLING + TOAST + BADGE
+       ========================================= */
+    var POLL_INTERVAL_MS = 30000;
+    var pollTimer = null;
+    var lastSeen = localStorage.getItem('mc_last_seen') || new Date(Date.now() - 86400000).toISOString();
+    var previouslyKnownIds = {};
+    var pollFirstRun = true;
+
+    function updateLeadsBadge(count) {
+      var visible = count > 0;
+      [document.getElementById('leads-badge'), document.getElementById('leads-badge-mobile')].forEach(function (el) {
+        if (!el) return;
+        el.textContent = count > 99 ? '99+' : String(count);
+        el.classList.toggle('visible', visible);
+      });
+    }
+
+    function ensureToastStack() {
+      var stack = document.getElementById('toast-stack');
+      if (!stack) {
+        stack = document.createElement('div');
+        stack.id = 'toast-stack';
+        stack.className = 'toast-stack';
+        document.body.appendChild(stack);
+      }
+      return stack;
+    }
+
+    function showToast(lead) {
+      var stack = ensureToastStack();
+      var toast = document.createElement('div');
+      toast.className = 'toast';
+      var pillClass = lead.score === 'hot' ? 'hot' : lead.score === 'warm' ? 'warm' : 'cold';
+      toast.innerHTML =
+        '<div class="toast-title">' + escapeHtml(lead.name || 'Unknown') + '</div>' +
+        '<div class="toast-meta"><span class="score-pill ' + pillClass + '">' + escapeHtml(lead.score || '') + '</span>' + escapeHtml(lead.product || '') + '</div>' +
+        '<a href="/admin/?leadId=' + encodeURIComponent(lead.id) + '" class="toast-link">View →</a>';
+      stack.appendChild(toast);
+      requestAnimationFrame(function () { toast.classList.add('visible'); });
+      setTimeout(function () {
+        toast.classList.remove('visible');
+        setTimeout(function () { toast.remove(); }, 300);
+      }, 8000);
+    }
+
+    function playChime() {
+      // Use a small WebAudio chime so we don't need an mp3 asset
+      try {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        var ctx = new Ctx();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.0001;
+        gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      } catch (_) { /* ignore */ }
+    }
+
+    async function pollNewLeads() {
+      if (!token) return;
+      try {
+        var url = '/api/leads/new-since?since=' + encodeURIComponent(lastSeen);
+        var res = await fetch(url, { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) return;
+        var data = await res.json();
+        var count = data.count || 0;
+        updateLeadsBadge(count);
+
+        if (!pollFirstRun) {
+          var newOnes = (data.latest || []).filter(function (l) { return !previouslyKnownIds[l.id]; });
+          newOnes.forEach(function (lead) {
+            showToast(lead);
+            previouslyKnownIds[lead.id] = true;
+          });
+          if (newOnes.length > 0) playChime();
+        } else {
+          (data.latest || []).forEach(function (lead) { previouslyKnownIds[lead.id] = true; });
+        }
+        pollFirstRun = false;
+      } catch (err) {
+        console.error('pollNewLeads error:', err);
+      }
+    }
+
+    function startPolling() {
+      if (pollTimer) return;
+      pollNewLeads();
+      pollTimer = setInterval(pollNewLeads, POLL_INTERVAL_MS);
+    }
+
+    // Clear badge when user opens the Leads tab
+    var origShowTab = window.showTab;
+    window.showTab = function (name) {
+      if (name === 'leads') {
+        lastSeen = new Date().toISOString();
+        localStorage.setItem('mc_last_seen', lastSeen);
+        updateLeadsBadge(0);
+        previouslyKnownIds = {};
+        pollFirstRun = true;
+      }
+      origShowTab(name);
+    };
 
     /* =========================================
        NOTES LOG (per-lead)
