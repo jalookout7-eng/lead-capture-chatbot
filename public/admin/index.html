@@ -229,6 +229,9 @@
       border: 1px solid var(--card-border);
       border-radius: 12px; padding: 20px;
     }
+    .chart-panel + .chart-panel {
+      margin-top: 32px;
+    }
     .chart-title {
       font-size: 13px; font-weight: 600;
       color: var(--text-secondary); margin-bottom: 16px;
@@ -501,6 +504,13 @@
       .lead-row .lead-email,
       .lead-row .lead-product,
       .lead-row .lead-notes-preview { display: none; }
+      .col-email, .col-notes, .col-pipeline { display: none; }
+      .leads-header .pipeline-select,
+      .lead-row .pipeline-select { display: none; }
+      .leads-header,
+      .lead-row {
+        grid-template-columns: 1.4fr 1fr 0.6fr 1fr !important;
+      }
       .detail-panel { padding: 16px; }
       .msg-bubble { max-width: 85%; }
     }
@@ -609,6 +619,11 @@
     .settings-input:focus {
       border-color: var(--accent);
     }
+    .settings-field > .settings-input,
+    .settings-field > .settings-textarea {
+      width: 100%;
+      box-sizing: border-box;
+    }
     .btn-add-status {
       padding: 8px 18px;
       background: var(--accent);
@@ -620,6 +635,24 @@
       font-size: 14px;
     }
     .btn-add-status:hover { opacity: 0.85; }
+    .btn-danger {
+      background: transparent;
+      color: var(--hot);
+      border: 1px solid var(--hot);
+      border-radius: 8px;
+      padding: 8px 18px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn-danger:hover {
+      background: var(--hot);
+      color: #fff;
+    }
+    .btn-danger:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     .status-list {
       list-style: none;
       padding: 0;
@@ -648,6 +681,65 @@
     .delete-status-btn:hover {
       color: var(--hot);
       border-color: var(--hot);
+    }
+    .status-list-item.disabled span {
+      opacity: 0.4;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--card-border);
+      border-radius: 10px;
+      transition: 0.2s;
+    }
+    .toggle-slider::before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background: var(--text-primary);
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--accent);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+      background: #000;
+    }
+    .collapsible-title {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .collapse-caret {
+      transition: transform 0.2s;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .collapsible[data-collapsed="true"] .collapse-caret {
+      transform: rotate(-90deg);
+    }
+    .collapsible[data-collapsed="true"] .collapsible-body {
+      display: none;
     }
     .settings-field {
       margin-top: 14px;
@@ -993,18 +1085,21 @@
       <!-- Settings tab -->
       <div id="tab-settings" class="tab-content">
         <h1 class="section-title">Settings</h1>
-        <section class="settings-card">
-          <h2 class="settings-card-title">Pipeline Statuses</h2>
-          <p class="settings-card-desc">Configurable labels for the lead pipeline column. Deleting an option does not change leads that already have that label.</p>
+        <section class="settings-card collapsible" data-collapsed="false">
+          <h2 class="settings-card-title collapsible-title">Pipeline Statuses <span class="collapse-caret">▾</span></h2>
+          <div class="collapsible-body">
+          <p class="settings-card-desc">Configurable labels for the lead pipeline column. Toggling off hides the option from new leads without affecting existing leads that already have that label.</p>
           <div class="settings-add-row">
             <input id="newStatusInput" type="text" class="settings-input" placeholder="New status label">
             <button id="addStatusBtn" class="btn-add-status">Add</button>
           </div>
           <ul id="statusList" class="status-list"></ul>
+          </div>
         </section>
 
-        <section class="settings-card" style="margin-top:16px;">
-          <h2 class="settings-card-title">Notifications</h2>
+        <section class="settings-card collapsible" data-collapsed="false" style="margin-top:16px;">
+          <h2 class="settings-card-title collapsible-title">Notifications <span class="collapse-caret">▾</span></h2>
+          <div class="collapsible-body">
           <p class="settings-card-desc">New leads can trigger a Web Push to your phone, an email to your inbox, and a confirmation email to the lead.</p>
 
           <div class="settings-field">
@@ -1018,7 +1113,12 @@
 
           <div class="settings-field">
             <label class="settings-label" for="notif-from-address">From address</label>
-            <input id="notif-from-address" type="email" class="settings-input" style="max-width:100%;">
+            <input id="notif-from-address" type="email" class="settings-input">
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-recipient">Team notification recipient (leave blank to use the From address)</label>
+            <input id="notif-recipient" type="email" class="settings-input" placeholder="your@email.com">
           </div>
 
           <div class="settings-toggle-row">
@@ -1035,7 +1135,7 @@
 
           <div class="settings-field">
             <label class="settings-label" for="notif-subject">Confirmation subject</label>
-            <input id="notif-subject" type="text" class="settings-input" style="max-width:100%;" placeholder="We got your message, {{name}}">
+            <input id="notif-subject" type="text" class="settings-input" placeholder="We got your message, {{name}}">
           </div>
 
           <div class="settings-field">
@@ -1051,6 +1151,7 @@
             <p id="notif-push-status" class="settings-card-desc"></p>
             <p id="notif-push-ios-hint" class="settings-card-desc" style="display:none;">On iPhone, tap the Share button in Safari and choose "Add to Home Screen" first, then open from the home screen icon to enable push.</p>
             <button id="notif-push-toggle" class="btn-add-status">Enable on this device</button>
+          </div>
           </div>
         </section>
       </div>
@@ -1502,7 +1603,7 @@
         noneOpt.textContent = '—';
         if (!lead.pipeline_status) noneOpt.selected = true;
         pipelineSel.appendChild(noneOpt);
-        pipelineStatusCache.forEach(function (s) {
+        pipelineStatusCache.filter(function (s) { return s.enabled !== false; }).forEach(function (s) {
           var opt = document.createElement('option');
           opt.value = s.label;
           opt.textContent = s.label;
@@ -1687,6 +1788,41 @@
         saveRow.appendChild(saveBtn);
         saveRow.appendChild(saveFeedback);
         panel.appendChild(saveRow);
+
+        // Delete lead button (destructive — confirms before deleting)
+        var deleteRow = document.createElement('div');
+        deleteRow.style.cssText = 'display:flex;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--card-border);';
+        var deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete lead';
+        deleteBtn.className = 'btn-danger';
+        deleteBtn.onclick = async function () {
+          if (!confirm('Delete this lead permanently? Notes and conversation will also be removed. This cannot be undone.')) return;
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = 'Deleting...';
+          try {
+            var res = await fetch('/api/leads/' + encodeURIComponent(id), {
+              method: 'DELETE',
+              headers: authHeaders()
+            });
+            if (handleAuthError(res)) return;
+            if (!res.ok) {
+              alert('Failed to delete lead.');
+              deleteBtn.disabled = false;
+              deleteBtn.textContent = 'Delete lead';
+              return;
+            }
+            panel.classList.add('hidden');
+            allLeads = allLeads.filter(function (l) { return l.id !== id; });
+            renderLeads();
+          } catch (err) {
+            console.error('Delete lead error:', err);
+            alert('Failed to delete lead.');
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = 'Delete lead';
+          }
+        };
+        deleteRow.appendChild(deleteBtn);
+        panel.appendChild(deleteRow);
 
         // Conversation
         var msgTitle = document.createElement('div');
@@ -2171,15 +2307,19 @@
       if (!list) return;
       list.innerHTML = '';
       statuses.forEach(function (s) {
+        var enabled = s.enabled !== false;
         var li = document.createElement('li');
-        li.className = 'status-list-item';
+        li.className = 'status-list-item' + (enabled ? '' : ' disabled');
         li.innerHTML =
           '<span>' + escapeHtml(s.label) + '</span>' +
-          '<button data-id="' + s.id + '" class="delete-status-btn">Delete</button>';
+          '<label class="toggle-switch">' +
+          '  <input type="checkbox" data-id="' + s.id + '"' + (enabled ? ' checked' : '') + '>' +
+          '  <span class="toggle-slider"></span>' +
+          '</label>';
         list.appendChild(li);
       });
-      document.querySelectorAll('.delete-status-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () { deleteStatus(btn.dataset.id); });
+      document.querySelectorAll('#statusList .toggle-switch input').forEach(function (input) {
+        input.addEventListener('change', function () { toggleStatus(input.dataset.id, input.checked); });
       });
     }
 
@@ -2212,16 +2352,17 @@
       }
     }
 
-    async function deleteStatus(id) {
-      if (!confirm('Delete this status? Existing leads will keep their label as a free-text value.')) return;
+    async function toggleStatus(id, enabled) {
       try {
         var res = await fetch('/api/settings/pipeline-statuses/' + encodeURIComponent(id), {
-          method: 'DELETE',
-          headers: authHeaders()
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ enabled: enabled })
         });
         if (handleAuthError(res)) return;
         if (!res.ok) {
-          alert('Failed to delete status.');
+          alert('Failed to update status.');
+          await loadSettings();
           return;
         }
         await loadSettings();
@@ -2229,7 +2370,7 @@
           await loadPipelineStatusCache();
         }
       } catch (err) {
-        console.error('deleteStatus error:', err);
+        console.error('toggleStatus error:', err);
       }
     }
 
@@ -2260,6 +2401,7 @@
         document.getElementById('notif-resend-key-status').textContent =
           c.resend_api_key_set ? 'Key on file. Leave blank to keep; enter a new value to replace.' : 'No key set.';
         document.getElementById('notif-from-address').value = c.resend_from_address || '';
+        document.getElementById('notif-recipient').value = c.notification_recipient || '';
         document.getElementById('notif-team-email').checked = !!c.notify_team_email;
         document.getElementById('notif-lead-confirmation').checked = !!c.notify_lead_confirmation;
         document.getElementById('notif-subject').value = c.lead_confirmation_subject || '';
@@ -2312,6 +2454,10 @@
       if (fromAddr) fromAddr.addEventListener('blur', function () {
         patchNotificationSettings({ resend_from_address: fromAddr.value });
       });
+      var recip = document.getElementById('notif-recipient');
+      if (recip) recip.addEventListener('blur', function () {
+        patchNotificationSettings({ notification_recipient: recip.value });
+      });
 
       // Toggles: save on change
       var teamToggle = document.getElementById('notif-team-email');
@@ -2348,6 +2494,16 @@
         } else {
           if (typeof enablePush === 'function') await enablePush();
         }
+      });
+
+      // Collapsible section handlers
+      document.querySelectorAll('.collapsible-title').forEach(function (h) {
+        h.addEventListener('click', function () {
+          var section = h.closest('.collapsible');
+          if (!section) return;
+          var collapsed = section.getAttribute('data-collapsed') === 'true';
+          section.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
+        });
       });
 
       // Initial push status render so the button label + iOS hint reflect saved state
