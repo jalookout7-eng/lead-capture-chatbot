@@ -3,6 +3,7 @@ const { randomUUID } = require('crypto');
 const { getClient } = require('../db/client');
 const { qualifyLead } = require('../services/qualifier');
 const { requireAuth } = require('../middleware/auth');
+const { notifyNewLead } = require('../services/notifications');
 
 const router = express.Router();
 
@@ -38,6 +39,14 @@ router.post('/', async (req, res) => {
       sql: 'UPDATE chat_sessions SET lead_id = ? WHERE id = ?',
       args: [id, sessionId]
     });
+
+    // Fire-and-forget notifications (web push + team email + lead confirmation)
+    notifyNewLead({
+      id, name, email, product,
+      phone: phone || null,
+      summary, bottlenecks, score, followup,
+      created_at: now
+    }).catch(err => console.error('notifyNewLead dispatch error:', err));
 
     res.json({ id, score, followup });
   } catch (err) {

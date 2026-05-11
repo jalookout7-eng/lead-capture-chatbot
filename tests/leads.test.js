@@ -1,5 +1,10 @@
 const request = require('supertest');
 
+const mockNotifyNewLead = jest.fn().mockResolvedValue([]);
+jest.mock('../src/services/notifications', () => ({
+  notifyNewLead: mockNotifyNewLead
+}));
+
 jest.mock('../src/services/qualifier', () => ({
   qualifyLead: jest.fn().mockResolvedValue({
     summary: 'Test summary',
@@ -313,5 +318,39 @@ describe('GET /api/leads/stats — extended', () => {
       .set('Authorization', 'Bearer test-token');
     expect(res.status).toBe(200);
     expect(capturedArgs).toEqual(['2026-05-01T00:00:00.000Z', '2026-05-09T23:59:59.999Z']);
+  });
+});
+
+describe('POST /api/leads — fires notifyNewLead', () => {
+  beforeEach(() => {
+    mockNotifyNewLead.mockClear();
+  });
+
+  test('calls notifyNewLead after successful lead capture', async () => {
+    const res = await request(app).post('/api/leads').send({
+      sessionId: 'session-xyz',
+      name: 'New Lead',
+      email: 'new@example.com',
+      product: 'ai_service'
+    });
+    expect(res.status).toBe(200);
+    // Give the fire-and-forget call a tick to dispatch
+    await new Promise(r => setTimeout(r, 10));
+    expect(mockNotifyNewLead).toHaveBeenCalledTimes(1);
+    const calledWith = mockNotifyNewLead.mock.calls[0][0];
+    expect(calledWith.name).toBe('New Lead');
+    expect(calledWith.email).toBe('new@example.com');
+    expect(calledWith.score).toBeDefined();
+  });
+
+  test('returns 200 even if notifyNewLead rejects', async () => {
+    mockNotifyNewLead.mockRejectedValueOnce(new Error('worker down'));
+    const res = await request(app).post('/api/leads').send({
+      sessionId: 'session-xyz',
+      name: 'Resilient Lead',
+      email: 'r@example.com',
+      product: 'website'
+    });
+    expect(res.status).toBe(200);
   });
 });
