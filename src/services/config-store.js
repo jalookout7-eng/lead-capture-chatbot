@@ -6,7 +6,10 @@ const { getClient } = require('../db/client');
  */
 async function loadAllConfig() {
   const client = getClient();
-  const result = await client.execute('SELECT key, value FROM scraper_config');
+  const result = await client.execute({
+    sql: 'SELECT key, value FROM scraper_config',
+    args: []
+  });
   const config = {};
   result.rows.forEach(row => { config[row.key] = row.value; });
   return config;
