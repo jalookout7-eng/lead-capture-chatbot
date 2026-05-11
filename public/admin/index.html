@@ -649,6 +649,39 @@
       color: var(--hot);
       border-color: var(--hot);
     }
+    .settings-field {
+      margin-top: 14px;
+    }
+    .settings-label {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-bottom: 4px;
+      font-family: var(--mono);
+    }
+    .settings-toggle-row {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .settings-toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .settings-toggle-label input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--accent);
+    }
+    .settings-textarea {
+      resize: vertical;
+      min-height: 120px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
     /* Notes log (lead detail panel) */
     .notes-list {
       list-style: none;
@@ -893,6 +926,57 @@
             <button id="addStatusBtn" class="btn-add-status">Add</button>
           </div>
           <ul id="statusList" class="status-list"></ul>
+        </section>
+
+        <section class="settings-card" style="margin-top:16px;">
+          <h2 class="settings-card-title">Notifications</h2>
+          <p class="settings-card-desc">New leads can trigger a Web Push to your phone, an email to your inbox, and a confirmation email to the lead.</p>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-resend-key">Resend API key</label>
+            <div class="settings-add-row">
+              <input id="notif-resend-key" type="password" class="settings-input" placeholder="rk_live_...">
+              <button id="notif-resend-key-save" class="btn-add-status">Save</button>
+            </div>
+            <p id="notif-resend-key-status" class="settings-card-desc" style="margin-top:6px;"></p>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-from-address">From address</label>
+            <input id="notif-from-address" type="email" class="settings-input" style="max-width:100%;">
+          </div>
+
+          <div class="settings-toggle-row">
+            <label class="settings-toggle-label">
+              <input type="checkbox" id="notif-team-email"> <span>Email me when a new lead is captured</span>
+            </label>
+          </div>
+
+          <div class="settings-toggle-row">
+            <label class="settings-toggle-label">
+              <input type="checkbox" id="notif-lead-confirmation"> <span>Send confirmation email to leads</span>
+            </label>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-subject">Confirmation subject</label>
+            <input id="notif-subject" type="text" class="settings-input" style="max-width:100%;" placeholder="We got your message, {{name}}">
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-body">Confirmation body (HTML, supports {{name}})</label>
+            <textarea id="notif-body" class="settings-input settings-textarea" rows="8"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+              <button id="notif-body-reset" class="delete-status-btn">Reset to default</button>
+            </div>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label">Push notifications on this device</label>
+            <p id="notif-push-status" class="settings-card-desc"></p>
+            <p id="notif-push-ios-hint" class="settings-card-desc" style="display:none;">On iPhone, tap the Share button in Safari and choose "Add to Home Screen" first, then open from the home screen icon to enable push.</p>
+            <button id="notif-push-toggle" class="btn-add-status">Enable on this device</button>
+          </div>
         </section>
       </div>
 
@@ -1999,6 +2083,7 @@
         if (!res.ok) return;
         var data = await res.json();
         renderStatusList(data.statuses || []);
+        await loadNotificationSettings();
       } catch (err) {
         console.error('loadSettings error:', err);
       }
@@ -2080,6 +2165,113 @@
           if (e.key === 'Enter') addStatus();
         });
       }
+    });
+
+    /* =========================================
+       NOTIFICATIONS SETTINGS
+       ========================================= */
+    var notifDefaultBody = '<p>Hi {{name}},</p>\n<p>Thanks for chatting with Aria. We’ve received your details and one of our team will be in touch within 24 hours.</p>\n<p>— John Alexander<br>3D Visual Pro</p>';
+
+    async function loadNotificationSettings() {
+      try {
+        var res = await fetch('/api/settings/notifications', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) return;
+        var data = await res.json();
+        var c = data.config || {};
+        document.getElementById('notif-resend-key').value = '';
+        document.getElementById('notif-resend-key-status').textContent =
+          c.resend_api_key_set ? 'Key on file. Leave blank to keep; enter a new value to replace.' : 'No key set.';
+        document.getElementById('notif-from-address').value = c.resend_from_address || '';
+        document.getElementById('notif-team-email').checked = !!c.notify_team_email;
+        document.getElementById('notif-lead-confirmation').checked = !!c.notify_lead_confirmation;
+        document.getElementById('notif-subject').value = c.lead_confirmation_subject || '';
+        document.getElementById('notif-body').value = c.lead_confirmation_body || '';
+        if (typeof refreshPushStatus === 'function') refreshPushStatus();
+      } catch (err) {
+        console.error('loadNotificationSettings error:', err);
+      }
+    }
+
+    async function patchNotificationSettings(payload) {
+      try {
+        var res = await fetch('/api/settings/notifications', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify(payload)
+        });
+        if (handleAuthError(res)) return false;
+        if (!res.ok) {
+          var data = await res.json().catch(function () { return {}; });
+          alert(data.error || 'Failed to save.');
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.error('patchNotificationSettings error:', err);
+        return false;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // Resend key save
+      var keyBtn = document.getElementById('notif-resend-key-save');
+      if (keyBtn) keyBtn.addEventListener('click', async function () {
+        var input = document.getElementById('notif-resend-key');
+        var val = input.value.trim();
+        if (!val) {
+          alert('Enter a new key, or leave it as-is to keep the existing one.');
+          return;
+        }
+        var ok = await patchNotificationSettings({ resend_api_key: val });
+        if (ok) {
+          input.value = '';
+          loadNotificationSettings();
+        }
+      });
+
+      // From address: save on blur
+      var fromAddr = document.getElementById('notif-from-address');
+      if (fromAddr) fromAddr.addEventListener('blur', function () {
+        patchNotificationSettings({ resend_from_address: fromAddr.value });
+      });
+
+      // Toggles: save on change
+      var teamToggle = document.getElementById('notif-team-email');
+      if (teamToggle) teamToggle.addEventListener('change', function () {
+        patchNotificationSettings({ notify_team_email: teamToggle.checked });
+      });
+      var leadToggle = document.getElementById('notif-lead-confirmation');
+      if (leadToggle) leadToggle.addEventListener('change', function () {
+        patchNotificationSettings({ notify_lead_confirmation: leadToggle.checked });
+      });
+
+      // Subject + body: save on blur
+      var subj = document.getElementById('notif-subject');
+      if (subj) subj.addEventListener('blur', function () {
+        patchNotificationSettings({ lead_confirmation_subject: subj.value });
+      });
+      var body = document.getElementById('notif-body');
+      if (body) body.addEventListener('blur', function () {
+        patchNotificationSettings({ lead_confirmation_body: body.value });
+      });
+
+      // Reset body to default
+      var resetBtn = document.getElementById('notif-body-reset');
+      if (resetBtn) resetBtn.addEventListener('click', async function () {
+        document.getElementById('notif-body').value = notifDefaultBody;
+        await patchNotificationSettings({ lead_confirmation_body: notifDefaultBody });
+      });
+
+      // Push enable/disable
+      var pushBtn = document.getElementById('notif-push-toggle');
+      if (pushBtn) pushBtn.addEventListener('click', async function () {
+        if (localStorage.getItem('mc_push_enabled') === 'true') {
+          if (typeof disablePush === 'function') await disablePush();
+        } else {
+          if (typeof enablePush === 'function') await enablePush();
+        }
+      });
     });
 
     /* =========================================
