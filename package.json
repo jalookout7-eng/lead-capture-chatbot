@@ -10,7 +10,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "jest --runInBand",
-    "migrate:v2": "node scripts/migrate-v2.js"
+    "migrate:v2": "node scripts/migrate-v2.js",
+    "migrate:v4": "node scripts/migrate-v4.js"
   },
   "jest": {
     "testEnvironment": "node"
@@ -24,7 +25,9 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "groq-sdk": "^1.1.2",
-    "uuid": "^13.0.0"
+    "resend": "^6.12.3",
+    "uuid": "^13.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "jest": "^30.3.0",
