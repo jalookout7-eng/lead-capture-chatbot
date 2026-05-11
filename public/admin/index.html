@@ -2272,6 +2272,9 @@
           if (typeof enablePush === 'function') await enablePush();
         }
       });
+
+      // Initial push status render so the button label + iOS hint reflect saved state
+      if (typeof refreshPushStatus === 'function') refreshPushStatus();
     });
 
     /* =========================================
@@ -2366,11 +2369,12 @@
         var reg = await navigator.serviceWorker.getRegistration('/sw.js');
         var sub = reg && (await reg.pushManager.getSubscription());
         if (sub) {
-          await fetch('/api/push/subscribe', {
+          var delRes = await fetch('/api/push/subscribe', {
             method: 'DELETE',
             headers: authHeaders(),
             body: JSON.stringify({ endpoint: sub.endpoint })
           });
+          if (handleAuthError(delRes)) return;
           await sub.unsubscribe();
         }
         localStorage.removeItem('mc_push_enabled');
