@@ -329,6 +329,30 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
   }
 });
 
+// DELETE /api/leads/:id — permanently delete a lead and its associated data (admin)
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const client = getClient();
+    // Detach chat sessions first (lead_id FK)
+    await client.execute({
+      sql: 'UPDATE chat_sessions SET lead_id = NULL WHERE lead_id = ?',
+      args: [req.params.id]
+    });
+    // CASCADE handles lead_notes via FK. push_subscriptions are device-scoped, not lead-scoped.
+    const result = await client.execute({
+      sql: 'DELETE FROM leads WHERE id = ?',
+      args: [req.params.id]
+    });
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete lead error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // PATCH /api/leads/:id/pipeline-status — update configurable pipeline status (admin)
 router.patch('/:id/pipeline-status', requireAuth, async (req, res) => {
   const { pipeline_status } = req.body;

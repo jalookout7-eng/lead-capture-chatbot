@@ -112,3 +112,72 @@ describe('DELETE /api/settings/pipeline-statuses/:id', () => {
     expect(res.body.success).toBe(true);
   });
 });
+
+describe('PATCH /api/settings/pipeline-statuses/:id (toggle enabled)', () => {
+  test('returns 401 without auth', async () => {
+    const res = await request(app)
+      .patch('/api/settings/pipeline-statuses/abc')
+      .send({ enabled: false });
+    expect(res.status).toBe(401);
+  });
+
+  test('returns 400 if enabled is not boolean', async () => {
+    const res = await request(app)
+      .patch('/api/settings/pipeline-statuses/abc')
+      .set(authHeader)
+      .send({ enabled: 'yes' });
+    expect(res.status).toBe(400);
+  });
+
+  test('returns 404 if id not found', async () => {
+    mockExecute.mockResolvedValue({ rowsAffected: 0 });
+    const res = await request(app)
+      .patch('/api/settings/pipeline-statuses/missing')
+      .set(authHeader)
+      .send({ enabled: false });
+    expect(res.status).toBe(404);
+  });
+
+  test('returns 200 with enabled=false', async () => {
+    let capturedArgs = null;
+    mockExecute.mockImplementation(({ args }) => {
+      capturedArgs = args;
+      return { rowsAffected: 1 };
+    });
+    const res = await request(app)
+      .patch('/api/settings/pipeline-statuses/abc')
+      .set(authHeader)
+      .send({ enabled: false });
+    expect(res.status).toBe(200);
+    expect(capturedArgs[0]).toBe(0); // stored as integer 0
+  });
+
+  test('returns 200 with enabled=true', async () => {
+    let capturedArgs = null;
+    mockExecute.mockImplementation(({ args }) => {
+      capturedArgs = args;
+      return { rowsAffected: 1 };
+    });
+    const res = await request(app)
+      .patch('/api/settings/pipeline-statuses/abc')
+      .set(authHeader)
+      .send({ enabled: true });
+    expect(res.status).toBe(200);
+    expect(capturedArgs[0]).toBe(1); // stored as integer 1
+  });
+});
+
+describe('GET /api/settings/pipeline-statuses returns enabled flag', () => {
+  test('coerces enabled integer to boolean in response', async () => {
+    mockExecute.mockResolvedValue({
+      rows: [
+        { id: 's1', label: 'Active', created_at: '2026-05-01T00:00:00Z', enabled: 1 },
+        { id: 's2', label: 'Off', created_at: '2026-05-02T00:00:00Z', enabled: 0 }
+      ]
+    });
+    const res = await request(app).get('/api/settings/pipeline-statuses').set(authHeader);
+    expect(res.status).toBe(200);
+    expect(res.body.statuses[0].enabled).toBe(true);
+    expect(res.body.statuses[1].enabled).toBe(false);
+  });
+});

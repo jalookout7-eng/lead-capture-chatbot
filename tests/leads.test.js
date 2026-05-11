@@ -354,3 +354,44 @@ describe('POST /api/leads — fires notifyNewLead', () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe('DELETE /api/leads/:id', () => {
+  const { getClient } = require('../src/db/client');
+
+  beforeEach(() => {
+    getClient().execute.mockReset();
+  });
+
+  test('returns 401 without auth', async () => {
+    const res = await request(app).delete('/api/leads/test-id');
+    expect(res.status).toBe(401);
+  });
+
+  test('returns 404 if lead not found', async () => {
+    getClient().execute
+      .mockResolvedValueOnce({ rowsAffected: 0 }) // UPDATE chat_sessions
+      .mockResolvedValueOnce({ rowsAffected: 0 }); // DELETE leads
+    const res = await request(app)
+      .delete('/api/leads/missing')
+      .set('Authorization', 'Bearer test-token');
+    expect(res.status).toBe(404);
+  });
+
+  test('returns 200 on success and detaches chat sessions first', async () => {
+    const calls = [];
+    getClient().execute.mockImplementation(({ sql }) => {
+      calls.push(sql);
+      if (/UPDATE chat_sessions/i.test(sql)) return { rowsAffected: 1 };
+      if (/DELETE FROM leads/i.test(sql)) return { rowsAffected: 1 };
+      return { rowsAffected: 0 };
+    });
+    const res = await request(app)
+      .delete('/api/leads/lead-1')
+      .set('Authorization', 'Bearer test-token');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    // chat_sessions UPDATE happens before DELETE leads
+    expect(calls[0]).toMatch(/UPDATE chat_sessions/i);
+    expect(calls[1]).toMatch(/DELETE FROM leads/i);
+  });
+});
