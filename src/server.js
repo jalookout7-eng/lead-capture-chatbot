@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { initDb } = require('./db/client');
+const { bootstrapVapid } = require('./services/vapid');
 const chatRoute = require('./routes/chat');
 const leadsRoute = require('./routes/leads');
 const notesRoute = require('./routes/notes');
@@ -24,8 +25,9 @@ app.use('/api/market', marketRoute);
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
   initDb()
+    .then(() => bootstrapVapid())
     .then(() => app.listen(PORT, () => console.log(`Server running on port ${PORT}`)))
-    .catch(err => { console.error('DB init failed:', err); process.exit(1); });
+    .catch(err => { console.error('Init failed:', err); process.exit(1); });
 }
 
 module.exports = app;
