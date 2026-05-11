@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Visual Pro — Mission Control</title>
   <link rel="manifest" href="/admin/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MC">
+  <link rel="apple-touch-icon" href="https://placehold.co/180x180/0a0a1a/00ffc8?text=3DVP">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -645,6 +649,39 @@
       color: var(--hot);
       border-color: var(--hot);
     }
+    .settings-field {
+      margin-top: 14px;
+    }
+    .settings-label {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-bottom: 4px;
+      font-family: var(--mono);
+    }
+    .settings-toggle-row {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .settings-toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .settings-toggle-label input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--accent);
+    }
+    .settings-textarea {
+      resize: vertical;
+      min-height: 120px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
     /* Notes log (lead detail panel) */
     .notes-list {
       list-style: none;
@@ -764,6 +801,81 @@
     .pipeline-canvas {
       max-height: 300px;
     }
+    .nav-badge {
+      display: none;
+      background: var(--hot);
+      color: #fff;
+      border-radius: 9px;
+      padding: 1px 6px;
+      font-size: 10px;
+      margin-left: 6px;
+      min-width: 16px;
+      text-align: center;
+      vertical-align: middle;
+      font-family: var(--mono);
+    }
+    .nav-badge.visible {
+      display: inline-block;
+    }
+    .toast-stack {
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      width: 320px;
+      max-width: calc(100vw - 32px);
+      background: rgba(28, 28, 30, 0.95);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: var(--text-primary);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      transform: translateX(120%);
+      opacity: 0;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .toast.visible {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .toast-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .toast-meta {
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+    }
+    .toast-link {
+      color: var(--accent);
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .toast-link:hover { text-decoration: underline; }
+    .score-pill {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 6px;
+    }
+    .score-pill.hot { background: rgba(255,50,50,0.2); color: var(--hot); }
+    .score-pill.warm { background: rgba(255,180,0,0.2); color: var(--warm); }
+    .score-pill.cold { background: rgba(0,255,200,0.15); color: var(--cold); }
     .chart-empty.hidden {
       display: none;
     }
@@ -787,7 +899,7 @@
     <nav class="sidebar">
       <div class="sidebar-title">3D VISUAL PRO</div>
       <button id="nav-overview" class="nav-btn active" onclick="showTab('overview')">Overview</button>
-      <button id="nav-leads" class="nav-btn" onclick="showTab('leads')">Leads</button>
+      <button id="nav-leads" class="nav-btn" onclick="showTab('leads')">Leads<span id="leads-badge" class="nav-badge"></span></button>
       <button id="nav-followups" class="nav-btn" onclick="showTab('followups')">Follow-ups</button>
       <button id="nav-export" class="nav-btn" onclick="showTab('export')">Export</button>
       <button id="nav-settings" class="nav-btn" onclick="showTab('settings')">Settings</button>
@@ -890,6 +1002,57 @@
           </div>
           <ul id="statusList" class="status-list"></ul>
         </section>
+
+        <section class="settings-card" style="margin-top:16px;">
+          <h2 class="settings-card-title">Notifications</h2>
+          <p class="settings-card-desc">New leads can trigger a Web Push to your phone, an email to your inbox, and a confirmation email to the lead.</p>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-resend-key">Resend API key</label>
+            <div class="settings-add-row">
+              <input id="notif-resend-key" type="password" class="settings-input" placeholder="rk_live_...">
+              <button id="notif-resend-key-save" class="btn-add-status">Save</button>
+            </div>
+            <p id="notif-resend-key-status" class="settings-card-desc" style="margin-top:6px;"></p>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-from-address">From address</label>
+            <input id="notif-from-address" type="email" class="settings-input" style="max-width:100%;">
+          </div>
+
+          <div class="settings-toggle-row">
+            <label class="settings-toggle-label">
+              <input type="checkbox" id="notif-team-email"> <span>Email me when a new lead is captured</span>
+            </label>
+          </div>
+
+          <div class="settings-toggle-row">
+            <label class="settings-toggle-label">
+              <input type="checkbox" id="notif-lead-confirmation"> <span>Send confirmation email to leads</span>
+            </label>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-subject">Confirmation subject</label>
+            <input id="notif-subject" type="text" class="settings-input" style="max-width:100%;" placeholder="We got your message, {{name}}">
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="notif-body">Confirmation body (HTML, supports {{name}})</label>
+            <textarea id="notif-body" class="settings-input settings-textarea" rows="8"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+              <button id="notif-body-reset" class="delete-status-btn">Reset to default</button>
+            </div>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label">Push notifications on this device</label>
+            <p id="notif-push-status" class="settings-card-desc"></p>
+            <p id="notif-push-ios-hint" class="settings-card-desc" style="display:none;">On iPhone, tap the Share button in Safari and choose "Add to Home Screen" first, then open from the home screen icon to enable push.</p>
+            <button id="notif-push-toggle" class="btn-add-status">Enable on this device</button>
+          </div>
+        </section>
       </div>
 
       <!-- Mission Control Feed -->
@@ -927,6 +1090,7 @@
   </div>
 
   <!-- Mobile nav -->
+  <div id="toast-stack" class="toast-stack"></div>
   <div class="mobile-nav">
     <div class="mobile-nav-inner">
       <button id="mob-overview" class="mob-btn active" onclick="showTab('overview')" aria-label="Overview">
@@ -935,7 +1099,7 @@
       </button>
       <button id="mob-leads" class="mob-btn" onclick="showTab('leads')" aria-label="Leads">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Leads</span>
+        <span>Leads<span id="leads-badge-mobile" class="nav-badge"></span></span>
       </button>
       <button id="mob-followups" class="mob-btn" onclick="showTab('followups')" aria-label="Follow-ups">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -1974,6 +2138,7 @@
       showTab('overview');
       loadFeed();
       setInterval(loadMarket, 3600000);
+      startPolling();
     }
 
     // Service worker
@@ -1995,6 +2160,7 @@
         if (!res.ok) return;
         var data = await res.json();
         renderStatusList(data.statuses || []);
+        await loadNotificationSettings();
       } catch (err) {
         console.error('loadSettings error:', err);
       }
@@ -2077,6 +2243,334 @@
         });
       }
     });
+
+    /* =========================================
+       NOTIFICATIONS SETTINGS
+       ========================================= */
+    var notifDefaultBody = '<p>Hi {{name}},</p>\n<p>Thanks for chatting with Aria. We’ve received your details and one of our team will be in touch within 24 hours.</p>\n<p>— John Alexander<br>3D Visual Pro</p>';
+
+    async function loadNotificationSettings() {
+      try {
+        var res = await fetch('/api/settings/notifications', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) return;
+        var data = await res.json();
+        var c = data.config || {};
+        document.getElementById('notif-resend-key').value = '';
+        document.getElementById('notif-resend-key-status').textContent =
+          c.resend_api_key_set ? 'Key on file. Leave blank to keep; enter a new value to replace.' : 'No key set.';
+        document.getElementById('notif-from-address').value = c.resend_from_address || '';
+        document.getElementById('notif-team-email').checked = !!c.notify_team_email;
+        document.getElementById('notif-lead-confirmation').checked = !!c.notify_lead_confirmation;
+        document.getElementById('notif-subject').value = c.lead_confirmation_subject || '';
+        document.getElementById('notif-body').value = c.lead_confirmation_body || '';
+        if (typeof refreshPushStatus === 'function') refreshPushStatus();
+      } catch (err) {
+        console.error('loadNotificationSettings error:', err);
+      }
+    }
+
+    async function patchNotificationSettings(payload) {
+      try {
+        var res = await fetch('/api/settings/notifications', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify(payload)
+        });
+        if (handleAuthError(res)) return false;
+        if (!res.ok) {
+          var data = await res.json().catch(function () { return {}; });
+          alert(data.error || 'Failed to save.');
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.error('patchNotificationSettings error:', err);
+        return false;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // Resend key save
+      var keyBtn = document.getElementById('notif-resend-key-save');
+      if (keyBtn) keyBtn.addEventListener('click', async function () {
+        var input = document.getElementById('notif-resend-key');
+        var val = input.value.trim();
+        if (!val) {
+          alert('Enter a new key, or leave it as-is to keep the existing one.');
+          return;
+        }
+        var ok = await patchNotificationSettings({ resend_api_key: val });
+        if (ok) {
+          input.value = '';
+          loadNotificationSettings();
+        }
+      });
+
+      // From address: save on blur
+      var fromAddr = document.getElementById('notif-from-address');
+      if (fromAddr) fromAddr.addEventListener('blur', function () {
+        patchNotificationSettings({ resend_from_address: fromAddr.value });
+      });
+
+      // Toggles: save on change
+      var teamToggle = document.getElementById('notif-team-email');
+      if (teamToggle) teamToggle.addEventListener('change', function () {
+        patchNotificationSettings({ notify_team_email: teamToggle.checked });
+      });
+      var leadToggle = document.getElementById('notif-lead-confirmation');
+      if (leadToggle) leadToggle.addEventListener('change', function () {
+        patchNotificationSettings({ notify_lead_confirmation: leadToggle.checked });
+      });
+
+      // Subject + body: save on blur
+      var subj = document.getElementById('notif-subject');
+      if (subj) subj.addEventListener('blur', function () {
+        patchNotificationSettings({ lead_confirmation_subject: subj.value });
+      });
+      var body = document.getElementById('notif-body');
+      if (body) body.addEventListener('blur', function () {
+        patchNotificationSettings({ lead_confirmation_body: body.value });
+      });
+
+      // Reset body to default
+      var resetBtn = document.getElementById('notif-body-reset');
+      if (resetBtn) resetBtn.addEventListener('click', async function () {
+        document.getElementById('notif-body').value = notifDefaultBody;
+        await patchNotificationSettings({ lead_confirmation_body: notifDefaultBody });
+      });
+
+      // Push enable/disable
+      var pushBtn = document.getElementById('notif-push-toggle');
+      if (pushBtn) pushBtn.addEventListener('click', async function () {
+        if (localStorage.getItem('mc_push_enabled') === 'true') {
+          if (typeof disablePush === 'function') await disablePush();
+        } else {
+          if (typeof enablePush === 'function') await enablePush();
+        }
+      });
+
+      // Initial push status render so the button label + iOS hint reflect saved state
+      if (typeof refreshPushStatus === 'function') refreshPushStatus();
+    });
+
+    /* =========================================
+       WEB PUSH SUBSCRIPTION FLOW
+       ========================================= */
+    function urlBase64ToUint8Array(base64String) {
+      var padding = '='.repeat((4 - base64String.length % 4) % 4);
+      var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      var raw = atob(base64);
+      var bytes = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      return bytes;
+    }
+
+    function isIos() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent);
+    }
+
+    function isStandalone() {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+    }
+
+    function refreshPushStatus() {
+      var statusEl = document.getElementById('notif-push-status');
+      var iosHint = document.getElementById('notif-push-ios-hint');
+      var btn = document.getElementById('notif-push-toggle');
+      if (!statusEl || !btn) return;
+
+      var enabled = localStorage.getItem('mc_push_enabled') === 'true';
+      statusEl.textContent = enabled ? 'Enabled on this device.' : 'Not enabled on this device.';
+      btn.textContent = enabled ? 'Disable on this device' : 'Enable on this device';
+
+      // iOS hint: show only on iOS and only when NOT installed as standalone AND not yet enabled
+      if (iosHint) {
+        iosHint.style.display = (isIos() && !isStandalone() && !enabled) ? 'block' : 'none';
+      }
+    }
+
+    async function enablePush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert('Push notifications are not supported in this browser.');
+        return;
+      }
+      try {
+        var reg = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+
+        var permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          alert('Permission denied.');
+          return;
+        }
+
+        var keyRes = await fetch('/api/push/vapid-key');
+        if (!keyRes.ok) {
+          alert('Server VAPID key not available.');
+          return;
+        }
+        var publicKey = (await keyRes.json()).publicKey;
+
+        var sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+
+        var subJson = sub.toJSON();
+        var res = await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            endpoint: sub.endpoint,
+            keys: subJson.keys,
+            userAgent: navigator.userAgent
+          })
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) {
+          alert('Failed to register subscription with server.');
+          return;
+        }
+        localStorage.setItem('mc_push_enabled', 'true');
+        refreshPushStatus();
+      } catch (err) {
+        console.error('enablePush error:', err);
+        alert('Failed to enable push notifications.');
+      }
+    }
+
+    async function disablePush() {
+      try {
+        var reg = await navigator.serviceWorker.getRegistration('/sw.js');
+        var sub = reg && (await reg.pushManager.getSubscription());
+        if (sub) {
+          var delRes = await fetch('/api/push/subscribe', {
+            method: 'DELETE',
+            headers: authHeaders(),
+            body: JSON.stringify({ endpoint: sub.endpoint })
+          });
+          if (handleAuthError(delRes)) return;
+          await sub.unsubscribe();
+        }
+        localStorage.removeItem('mc_push_enabled');
+        refreshPushStatus();
+      } catch (err) {
+        console.error('disablePush error:', err);
+      }
+    }
+
+    /* =========================================
+       LEADS POLLING + TOAST + BADGE
+       ========================================= */
+    var POLL_INTERVAL_MS = 30000;
+    var pollTimer = null;
+    var lastSeen = localStorage.getItem('mc_last_seen') || new Date(Date.now() - 86400000).toISOString();
+    var previouslyKnownIds = {};
+    var pollFirstRun = true;
+
+    function updateLeadsBadge(count) {
+      var visible = count > 0;
+      [document.getElementById('leads-badge'), document.getElementById('leads-badge-mobile')].forEach(function (el) {
+        if (!el) return;
+        el.textContent = count > 99 ? '99+' : String(count);
+        el.classList.toggle('visible', visible);
+      });
+    }
+
+    function ensureToastStack() {
+      var stack = document.getElementById('toast-stack');
+      if (!stack) {
+        stack = document.createElement('div');
+        stack.id = 'toast-stack';
+        stack.className = 'toast-stack';
+        document.body.appendChild(stack);
+      }
+      return stack;
+    }
+
+    function showToast(lead) {
+      var stack = ensureToastStack();
+      var toast = document.createElement('div');
+      toast.className = 'toast';
+      var pillClass = lead.score === 'hot' ? 'hot' : lead.score === 'warm' ? 'warm' : 'cold';
+      toast.innerHTML =
+        '<div class="toast-title">' + escapeHtml(lead.name || 'Unknown') + '</div>' +
+        '<div class="toast-meta"><span class="score-pill ' + pillClass + '">' + escapeHtml(lead.score || '') + '</span>' + escapeHtml(lead.product || '') + '</div>' +
+        '<a href="/admin/?leadId=' + encodeURIComponent(lead.id) + '" class="toast-link">View →</a>';
+      stack.appendChild(toast);
+      requestAnimationFrame(function () { toast.classList.add('visible'); });
+      setTimeout(function () {
+        toast.classList.remove('visible');
+        setTimeout(function () { toast.remove(); }, 300);
+      }, 8000);
+    }
+
+    function playChime() {
+      // Use a small WebAudio chime so we don't need an mp3 asset
+      try {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        var ctx = new Ctx();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.0001;
+        gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      } catch (_) { /* ignore */ }
+    }
+
+    async function pollNewLeads() {
+      if (!token) return;
+      try {
+        var url = '/api/leads/new-since?since=' + encodeURIComponent(lastSeen);
+        var res = await fetch(url, { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) return;
+        var data = await res.json();
+        var count = data.count || 0;
+        updateLeadsBadge(count);
+
+        if (!pollFirstRun) {
+          var newOnes = (data.latest || []).filter(function (l) { return !previouslyKnownIds[l.id]; });
+          newOnes.forEach(function (lead) {
+            showToast(lead);
+            previouslyKnownIds[lead.id] = true;
+          });
+          if (newOnes.length > 0) playChime();
+        } else {
+          (data.latest || []).forEach(function (lead) { previouslyKnownIds[lead.id] = true; });
+        }
+        pollFirstRun = false;
+      } catch (err) {
+        console.error('pollNewLeads error:', err);
+      }
+    }
+
+    function startPolling() {
+      if (pollTimer) return;
+      pollNewLeads();
+      pollTimer = setInterval(pollNewLeads, POLL_INTERVAL_MS);
+    }
+
+    // Clear badge when user opens the Leads tab
+    var origShowTab = window.showTab;
+    window.showTab = function (name) {
+      if (name === 'leads') {
+        lastSeen = new Date().toISOString();
+        localStorage.setItem('mc_last_seen', lastSeen);
+        updateLeadsBadge(0);
+        previouslyKnownIds = {};
+        pollFirstRun = true;
+      }
+      origShowTab(name);
+    };
 
     /* =========================================
        NOTES LOG (per-lead)

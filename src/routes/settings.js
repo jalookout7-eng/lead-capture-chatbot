@@ -2,6 +2,7 @@ const express = require('express');
 const { randomUUID } = require('crypto');
 const { getClient } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
+const { loadAllConfig, setConfig } = require('../services/config-store');
 
 const router = express.Router();
 
@@ -57,6 +58,56 @@ router.delete('/settings/pipeline-statuses/:id', requireAuth, async (req, res) =
     res.json({ success: true });
   } catch (err) {
     console.error('Delete status error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/settings/notifications — returns masked notification config
+router.get('/settings/notifications', requireAuth, async (req, res) => {
+  try {
+    const config = await loadAllConfig();
+    res.json({
+      config: {
+        resend_api_key_set: Boolean(config.resend_api_key && config.resend_api_key.length > 0),
+        resend_from_address: config.resend_from_address || '',
+        notify_team_email: config.notify_team_email === 'true',
+        notify_lead_confirmation: config.notify_lead_confirmation === 'true',
+        lead_confirmation_subject: config.lead_confirmation_subject || '',
+        lead_confirmation_body: config.lead_confirmation_body || ''
+      }
+    });
+  } catch (err) {
+    console.error('Get notifications settings error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PATCH /api/settings/notifications — upsert any subset of allowed keys
+router.patch('/settings/notifications', requireAuth, async (req, res) => {
+  const ALLOWED_BOOL = ['notify_team_email', 'notify_lead_confirmation'];
+  const ALLOWED_STR = ['resend_api_key', 'resend_from_address', 'lead_confirmation_subject', 'lead_confirmation_body'];
+
+  const body = req.body || {};
+
+  // Guard: resend_api_key cannot be explicitly cleared (must either omit or provide a real key)
+  if (Object.prototype.hasOwnProperty.call(body, 'resend_api_key') && body.resend_api_key === '') {
+    return res.status(400).json({ error: 'resend_api_key cannot be empty; omit to leave unchanged' });
+  }
+
+  try {
+    for (const key of ALLOWED_BOOL) {
+      if (Object.prototype.hasOwnProperty.call(body, key)) {
+        await setConfig(key, body[key] ? 'true' : 'false');
+      }
+    }
+    for (const key of ALLOWED_STR) {
+      if (Object.prototype.hasOwnProperty.call(body, key) && typeof body[key] === 'string') {
+        await setConfig(key, body[key]);
+      }
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update notifications settings error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

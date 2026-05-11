@@ -3,6 +3,7 @@ const { randomUUID } = require('crypto');
 const { getClient } = require('../db/client');
 const { qualifyLead } = require('../services/qualifier');
 const { requireAuth } = require('../middleware/auth');
+const { notifyNewLead } = require('../services/notifications');
 
 const router = express.Router();
 
@@ -38,6 +39,14 @@ router.post('/', async (req, res) => {
       sql: 'UPDATE chat_sessions SET lead_id = ? WHERE id = ?',
       args: [id, sessionId]
     });
+
+    // Fire-and-forget notifications (web push + team email + lead confirmation)
+    notifyNewLead({
+      id, name, email, product,
+      phone: phone || null,
+      summary, bottlenecks, score, followup,
+      created_at: now
+    }).catch(err => console.error('notifyNewLead dispatch error:', err));
 
     res.json({ id, score, followup });
   } catch (err) {
@@ -131,6 +140,35 @@ router.post('/import', requireAuth, async (req, res) => {
   }
 
   res.json({ imported, errors });
+});
+
+// GET /api/leads/new-since?since=<ISO> — for MC polling (admin) — must be before /:id
+router.get('/new-since', requireAuth, async (req, res) => {
+  const { since } = req.query;
+  if (!since) return res.status(400).json({ error: 'since query param is required' });
+  const sinceDate = new Date(since);
+  if (isNaN(sinceDate.getTime())) {
+    return res.status(400).json({ error: 'since must be a valid ISO date' });
+  }
+  try {
+    const client = getClient();
+    const sinceIso = sinceDate.toISOString();
+    const countResult = await client.execute({
+      sql: 'SELECT COUNT(*) as count FROM leads WHERE created_at > ?',
+      args: [sinceIso]
+    });
+    const latestResult = await client.execute({
+      sql: 'SELECT id, name, score, product, created_at FROM leads WHERE created_at > ? ORDER BY created_at DESC LIMIT 10',
+      args: [sinceIso]
+    });
+    res.json({
+      count: countResult.rows[0]?.count ?? 0,
+      latest: latestResult.rows
+    });
+  } catch (err) {
+    console.error('new-since error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // GET /api/leads/stats — dashboard stats with optional date filter (admin) — must be before /:id
