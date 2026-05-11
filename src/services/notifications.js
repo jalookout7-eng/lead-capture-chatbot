@@ -107,10 +107,15 @@ function escapeHtml(s) {
 async function sendTeamEmail(lead, config) {
   if (config.notify_team_email !== 'true') return { skipped: 'disabled' };
   if (!config.resend_api_key) return { skipped: 'no_api_key' };
+  // Recipient defaults to from-address (sender's own inbox) when notification_recipient is unset.
+  // Set notification_recipient explicitly to route alerts to a different address (e.g., Gmail for testing).
+  const recipient = (config.notification_recipient && config.notification_recipient.includes('@'))
+    ? config.notification_recipient
+    : config.resend_from_address;
   const resend = new Resend(config.resend_api_key);
   const result = await resend.emails.send({
     from: config.resend_from_address,
-    to: config.resend_from_address,
+    to: recipient,
     subject: `New ${lead.score} lead — ${lead.name}`,
     html: buildTeamEmailHtml(lead)
   });
