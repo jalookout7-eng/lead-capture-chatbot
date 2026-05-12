@@ -496,21 +496,9 @@
       .mobile-nav { display: block; }
       .main-content { padding: 20px 16px 80px 16px; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .leads-header { grid-template-columns: 1fr 0.7fr 0.7fr; }
-      .leads-header .col-email,
-      .leads-header .col-phone,
-      .leads-header .col-notes { display: none; }
-      .lead-row { grid-template-columns: 1fr 0.7fr 0.7fr; }
-      .lead-row .lead-email,
-      .lead-row .lead-product,
-      .lead-row .lead-notes-preview { display: none; }
-      .col-email, .col-notes, .col-pipeline { display: none; }
-      .leads-header .pipeline-select,
-      .lead-row .pipeline-select { display: none; }
-      .leads-header,
-      .lead-row {
-        grid-template-columns: 1.4fr 1fr 0.6fr 1fr !important;
-      }
+      /* Leads table: horizontal scroll on mobile (all columns retained, swipe left/right) */
+      .leads-panel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .leads-header, .lead-row { min-width: 780px; }
       .detail-panel { padding: 16px; }
       .msg-bubble { max-width: 85%; }
     }
