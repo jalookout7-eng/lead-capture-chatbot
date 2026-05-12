@@ -27,12 +27,12 @@ router.post('/', async (req, res) => {
       ? JSON.parse(sessionResult.rows[0].messages)
       : [];
 
-    const { summary, bottlenecks, score, followup } = await qualifyLead(messages);
+    const { summary, bottlenecks, score, followup, signals_observed } = await qualifyLead(messages);
 
     await client.execute({
-      sql: `INSERT INTO leads (id, name, email, product, phone, summary, bottlenecks, score, followup, followup_sent, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'new', ?)`,
-      args: [id, name, email, product, phone || null, summary, JSON.stringify(bottlenecks), score, followup, now]
+      sql: `INSERT INTO leads (id, name, email, product, phone, summary, bottlenecks, score, followup, followup_sent, status, signals_observed, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'new', ?, ?)`,
+      args: [id, name, email, product, phone || null, summary, JSON.stringify(bottlenecks), score, followup, JSON.stringify(signals_observed || []), now]
     });
 
     await client.execute({

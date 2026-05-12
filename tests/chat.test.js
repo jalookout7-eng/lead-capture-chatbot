@@ -1,4 +1,6 @@
 const request = require('supertest');
+const path = require('path');
+const fs = require('fs');
 
 // Mock AI service
 jest.mock('../src/services/ai', () => ({
@@ -59,4 +61,13 @@ describe('POST /api/chat', () => {
     expect(res.status).toBe(200);
     expect(res.body.product).toBe('consultancy');
   });
+});
+
+test('aria-core-prompt.md exists and includes the Aria persona declaration', () => {
+  const corePath = path.join(__dirname, '..', 'src', 'services', 'aria-core-prompt.md');
+  expect(fs.existsSync(corePath)).toBe(true);
+  const content = fs.readFileSync(corePath, 'utf8');
+  expect(content).toMatch(/Aria, a senior digital marketing consultant/);
+  expect(content).toMatch(/CAPTURE_READY/);
+  expect(content).toMatch(/SEGMENT:ads/);
 });

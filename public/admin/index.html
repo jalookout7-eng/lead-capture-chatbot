@@ -972,6 +972,44 @@
       display: none;
     }
 
+    /* Intelligence sub-tabs */
+    .subtab-nav { display: flex; gap: 8px; border-bottom: 1px solid var(--card-border); margin-bottom: 12px; flex-wrap: wrap; }
+    .subtab-btn { background: transparent; border: none; color: var(--text-secondary); padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; }
+    .subtab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+    .subtab-panel { display: none; }
+    .subtab-panel.active { display: block; }
+    .weights-table { border-collapse: collapse; margin: 8px 0; }
+    .weights-table td { padding: 4px 12px 4px 0; font-size: 13px; color: var(--text-primary); font-family: var(--mono); }
+    .lessons-md { white-space: pre-wrap; font-size: 13px; font-family: var(--mono); color: var(--text-primary); }
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+    .filter-btn { padding: 6px 12px; background: var(--bg); border: 1px solid var(--card-border); border-radius: 6px; color: var(--text-primary); cursor: pointer; font-size: 12px; }
+    .filter-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+    .btn-primary { padding: 8px 16px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-publish { padding: 6px 14px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 6px; }
+    .btn-reject { padding: 6px 14px; background: transparent; border: 1px solid var(--hot); color: var(--hot); border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-rollback { padding: 6px 14px; background: transparent; border: 1px solid var(--warm); color: var(--warm); border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .status-pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: var(--mono); font-weight: 700; text-transform: uppercase; }
+    .status-pill.exemplary { background: rgba(0,255,200,0.15); color: var(--accent); }
+    .status-pill.problematic { background: rgba(255,50,50,0.15); color: var(--hot); }
+    .status-pill.archived { background: rgba(255,255,255,0.1); color: var(--text-secondary); }
+    .status-pill.rejected { background: rgba(255,50,50,0.1); color: var(--hot); }
+    .status-pill.active { background: rgba(0,255,200,0.15); color: var(--accent); }
+    .settings-card + .settings-card { margin-top: 12px; }
+    .settings-card header { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
+    .settings-card-body { padding-top: 8px; }
+    .muted { color: var(--text-secondary); font-size: 12px; }
+    .radio-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; cursor: pointer; }
+    #lead-tag-reason { width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--card-border); border-radius: 6px; color: #fff; font-size: 13px; margin: 8px 0; box-sizing: border-box; }
+    #lead-tag-list { list-style: none; padding: 0; margin: 8px 0 0; }
+    #lead-tag-list li { padding: 6px 0; font-size: 13px; border-bottom: 1px solid rgba(0,255,200,0.06); }
+    .funnel-card { display: inline-block; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 16px 20px; margin: 6px; text-align: center; min-width: 100px; }
+    .funnel-num { font-size: 28px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+    .tag-stat { display: inline-block; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 16px; margin: 6px; font-size: 14px; }
+    #ana-signal-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+    #ana-signal-table th, #ana-signal-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(0,255,200,0.08); }
+    #ana-signal-table th { color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+
     /* Scraper tab */
     .scraper-tag {
       display: inline-flex; align-items: center; gap: 4px;
@@ -1010,8 +1048,9 @@
       <button id="nav-leads" class="nav-btn" onclick="showTab('leads')">Leads<span id="leads-badge" class="nav-badge"></span></button>
       <button id="nav-followups" class="nav-btn" onclick="showTab('followups')">Follow-ups</button>
       <button id="nav-export" class="nav-btn" onclick="showTab('export')">Export</button>
-      <button id="nav-settings" class="nav-btn" onclick="showTab('settings')">Settings</button>
       <button id="nav-scraper" class="nav-btn" onclick="showTab('scraper')">Scraper</button>
+      <button id="nav-settings" class="nav-btn" onclick="showTab('settings')">Settings</button>
+      <button id="nav-intelligence" class="nav-btn" onclick="showTab('intelligence')">Intelligence</button>
     </nav>
 
     <!-- Main content -->
@@ -1291,6 +1330,23 @@
         </div>
       </div>
 
+      <!-- Intelligence tab -->
+      <div id="tab-intelligence" class="tab-content">
+        <h1 class="section-title">Intelligence</h1>
+        <nav class="subtab-nav">
+          <button class="subtab-btn active" data-subtab="current">Current</button>
+          <button class="subtab-btn" data-subtab="pending">Pending</button>
+          <button class="subtab-btn" data-subtab="history">History</button>
+          <button class="subtab-btn" data-subtab="tags">Tags</button>
+          <button class="subtab-btn" data-subtab="analytics">Analytics</button>
+        </nav>
+        <section id="subtab-current"   class="subtab-panel active"></section>
+        <section id="subtab-pending"   class="subtab-panel"></section>
+        <section id="subtab-history"   class="subtab-panel"></section>
+        <section id="subtab-tags"      class="subtab-panel"></section>
+        <section id="subtab-analytics" class="subtab-panel"></section>
+      </div>
+
       <!-- Mission Control Feed -->
       <div class="feed-section">
         <div class="feed-title">// Mission Control Feed</div>
@@ -1345,13 +1401,17 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
         <span>Export</span>
       </button>
+      <button id="mob-scraper" class="mob-btn" onclick="showTab('scraper')" aria-label="Scraper">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <span>Scraper</span>
+      </button>
       <button id="mob-settings" class="mob-btn" onclick="showTab('settings')" aria-label="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         <span>Settings</span>
       </button>
-      <button id="mob-scraper" class="mob-btn" onclick="showTab('scraper')" aria-label="Scraper">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <span>Scraper</span>
+      <button id="mob-intelligence" class="mob-btn" onclick="showTab('intelligence')" aria-label="Intelligence">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M9 21h6"/><path d="M9 17v4"/><path d="M15 17v4"/></svg>
+        <span>Intel</span>
       </button>
     </div>
   </div>
@@ -1889,6 +1949,22 @@
 
         // Load notes from API
         loadNotes(id);
+
+        // Tag section for Aria training
+        currentLeadId = id;
+        var tagSection = document.createElement('section');
+        tagSection.id = 'lead-tag-section';
+        tagSection.className = 'detail-panel';
+        tagSection.style.marginTop = '16px';
+        tagSection.innerHTML = '<div class="detail-section-title">Tag for Aria training</div>' +
+          '<label class="radio-row"><input type="radio" name="lead-tag-type" value="exemplary"> Exemplary — Aria handled this well</label>' +
+          '<label class="radio-row"><input type="radio" name="lead-tag-type" value="problematic"> Problematic — Aria mishandled this</label>' +
+          '<input type="text" id="lead-tag-reason" placeholder="Reason (required)">' +
+          '<button id="lead-tag-submit" class="btn-add-note" style="margin-top:4px;">Add tag</button>' +
+          '<div class="detail-section-title" style="margin-top:12px;">Existing tags</div>' +
+          '<ul id="lead-tag-list"></ul>';
+        panel.appendChild(tagSection);
+        loadLeadTags(id);
 
         // Save button + feedback
         var saveRow = document.createElement('div');
@@ -2854,7 +2930,7 @@
       pollTimer = setInterval(pollNewLeads, POLL_INTERVAL_MS);
     }
 
-    // Clear badge when user opens the Leads tab; init Scraper tab on first visit
+    // Clear badge when user opens the Leads tab; init Scraper/Intelligence tab on first visit
     var origShowTab = window.showTab;
     window.showTab = function (name) {
       if (name === 'leads') {
@@ -2866,6 +2942,9 @@
       }
       if (name === 'scraper') {
         initScraperTab();
+      }
+      if (name === 'intelligence') {
+        initIntelligenceTab();
       }
       origShowTab(name);
     };
@@ -2879,6 +2958,340 @@
       scraperInited = true;
       await loadScraperConfig();
       await loadScrapedLeads();
+    }
+
+    /* =========================================
+       INTELLIGENCE TAB
+       ========================================= */
+    var intelligenceInited = false;
+    async function initIntelligenceTab() {
+      if (intelligenceInited) return;
+      intelligenceInited = true;
+      // Wire sub-tab buttons
+      document.querySelectorAll('.subtab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var target = btn.dataset.subtab;
+          document.querySelectorAll('.subtab-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          document.querySelectorAll('.subtab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'subtab-' + target); });
+          if (target === 'current')   renderCurrentVersion();
+          if (target === 'pending')   renderPendingVersions();
+          if (target === 'history')   renderHistoryVersions();
+          if (target === 'tags')      renderTagsList();
+          if (target === 'analytics') renderAnalytics();
+        });
+      });
+      await renderCurrentVersion();
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleString();
+    }
+
+    async function renderCurrentVersion() {
+      var panel = document.getElementById('subtab-current');
+      panel.innerHTML = '<p>Loading…</p>';
+      var res = await fetch('/api/intelligence/active', { headers: authHeaders() });
+      if (handleAuthError(res)) return;
+      if (res.status === 503) { panel.innerHTML = '<p>No active intelligence version.</p>'; return; }
+      var data = await res.json();
+      var version = data.version;
+      var rules = {};
+      try { rules = JSON.parse(version.scoring_rules || '{}'); } catch (e) { rules = {}; }
+      panel.innerHTML = '<div class="settings-card">' +
+        '<header><h3>Active: v' + version.version_number + '</h3>' +
+        '<p>Published ' + formatDate(version.published_at) + ' by ' + escapeHtml(version.published_by || '—') + '</p>' +
+        '<p class="muted">core_hash: <code>' + (version.core_hash || '').slice(0, 12) + '…</code></p>' +
+        '</header></div>' +
+        '<details class="settings-card" open style="margin-top:12px;"><summary>Lessons Learned</summary>' +
+        '<div class="settings-card-body"><pre class="lessons-md">' + escapeHtml(version.lessons_learned || '(none)') + '</pre></div>' +
+        '</details>' +
+        '<details class="settings-card" open style="margin-top:12px;"><summary>Scoring Rules</summary>' +
+        '<div class="settings-card-body">' +
+        '<h4>Weights</h4>' +
+        '<table class="weights-table">' +
+        Object.entries(rules.weights || {}).sort(function (a, b) { return Math.abs(b[1]) - Math.abs(a[1]); })
+          .map(function (kv) { return '<tr><td>' + escapeHtml(kv[0]) + '</td><td>' + (kv[1] > 0 ? '+' : '') + kv[1] + '</td></tr>'; }).join('') +
+        '</table>' +
+        '<h4>Thresholds</h4>' +
+        '<p>Hot ≥ ' + ((rules.thresholds && rules.thresholds.hot) != null ? rules.thresholds.hot : '—') +
+        ' · Warm ≥ ' + ((rules.thresholds && rules.thresholds.warm) != null ? rules.thresholds.warm : '—') + '</p>' +
+        '<h4>Signal examples</h4>' +
+        '<p><b>Hot:</b> ' + ((rules.signals && rules.signals.hot_signals) || []).map(escapeHtml).join(', ') + '</p>' +
+        '<p><b>Warm:</b> ' + ((rules.signals && rules.signals.warm_signals) || []).map(escapeHtml).join(', ') + '</p>' +
+        '<p><b>Cold:</b> ' + ((rules.signals && rules.signals.cold_signals) || []).map(escapeHtml).join(', ') + '</p>' +
+        '</div></details>';
+    }
+
+    async function renderPendingVersions() {
+      var panel = document.getElementById('subtab-pending');
+      panel.innerHTML = '<p>Loading…</p>';
+      var res = await fetch('/api/intelligence/versions?status=pending', { headers: authHeaders() });
+      if (handleAuthError(res)) return;
+      var data = await res.json();
+      var versions = data.versions || [];
+      if (!versions.length) { panel.innerHTML = '<p>No pending versions.</p>'; return; }
+      panel.innerHTML = versions.map(function (v) {
+        return '<article class="settings-card" data-version-id="' + v.id + '" style="margin-bottom:12px;">' +
+          '<header><b>v' + v.version_number + '</b> · ' + escapeHtml(v.source) + ' · created ' + formatDate(v.created_at) + '</header>' +
+          '<div class="settings-card-body">' +
+          '<p>' + escapeHtml(v.changelog || '') + '</p>' +
+          '<button class="btn-publish" style="margin-top:8px;">Publish</button>' +
+          '<button class="btn-reject">Reject</button>' +
+          '</div></article>';
+      }).join('');
+      panel.querySelectorAll('.btn-publish').forEach(function (btn) {
+        btn.addEventListener('click', function () { publishVersion(btn.closest('[data-version-id]').dataset.versionId); });
+      });
+      panel.querySelectorAll('.btn-reject').forEach(function (btn) {
+        btn.addEventListener('click', function () { rejectVersion(btn.closest('[data-version-id]').dataset.versionId); });
+      });
+    }
+
+    async function publishVersion(id) {
+      if (!confirm('Publish this version? The current active version will be archived.')) return;
+      var res = await fetch('/api/intelligence/versions/' + id + '/publish', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ published_by: 'admin' })
+      });
+      if (handleAuthError(res)) return;
+      if (!res.ok) { showSimpleToast('Publish failed'); return; }
+      showSimpleToast('Version published');
+      intelligenceInited = false;
+      await initIntelligenceTab();
+      await renderPendingVersions();
+    }
+
+    async function rejectVersion(id) {
+      var reason = prompt('Reason for rejection (optional):') || '';
+      var res = await fetch('/api/intelligence/versions/' + id + '/reject', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ reason: reason })
+      });
+      if (handleAuthError(res)) return;
+      if (!res.ok) { showSimpleToast('Reject failed'); return; }
+      showSimpleToast('Version rejected');
+      await renderPendingVersions();
+    }
+
+    async function renderHistoryVersions() {
+      var panel = document.getElementById('subtab-history');
+      panel.innerHTML = '<p>Loading…</p>';
+      var archivedRes = await fetch('/api/intelligence/versions?status=archived', { headers: authHeaders() });
+      if (handleAuthError(archivedRes)) return;
+      var rejectedRes = await fetch('/api/intelligence/versions?status=rejected', { headers: authHeaders() });
+      if (handleAuthError(rejectedRes)) return;
+      var archived = (await archivedRes.json()).versions || [];
+      var rejected = (await rejectedRes.json()).versions || [];
+      var all = archived.concat(rejected).sort(function (a, b) { return b.version_number - a.version_number; });
+      if (!all.length) { panel.innerHTML = '<p>No archived or rejected versions yet.</p>'; return; }
+      panel.innerHTML = all.map(function (v) {
+        return '<article class="settings-card" data-version-id="' + v.id + '" style="margin-bottom:12px;">' +
+          '<header><b>v' + v.version_number + '</b> · <span class="status-pill ' + v.status + '">' + v.status + '</span>' +
+          ' · ' + formatDate(v.published_at) + ' → ' + formatDate(v.archived_at) + '</header>' +
+          '<div class="settings-card-body">' +
+          '<p>' + escapeHtml(v.changelog || '') + '</p>' +
+          (v.status === 'archived' ? '<button class="btn-rollback" style="margin-top:8px;">Rollback to this version</button>' : '') +
+          '</div></article>';
+      }).join('');
+      panel.querySelectorAll('.btn-rollback').forEach(function (btn) {
+        btn.addEventListener('click', function () { rollbackVersion(btn.closest('[data-version-id]').dataset.versionId); });
+      });
+    }
+
+    async function rollbackVersion(id) {
+      if (!confirm('Rollback to this archived version? The current active version will be archived.')) return;
+      var res = await fetch('/api/intelligence/versions/' + id + '/rollback', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ published_by: 'admin' })
+      });
+      if (handleAuthError(res)) return;
+      if (!res.ok) { showSimpleToast('Rollback failed'); return; }
+      showSimpleToast('Rolled back');
+      await renderHistoryVersions();
+    }
+
+    async function renderTagsList() {
+      var panel = document.getElementById('subtab-tags');
+      panel.innerHTML = '<div class="filter-bar">' +
+        '<button class="filter-btn active" data-tag-filter="">All</button>' +
+        '<button class="filter-btn" data-tag-filter="exemplary">Exemplary only</button>' +
+        '<button class="filter-btn" data-tag-filter="problematic">Problematic only</button>' +
+        '</div>' +
+        '<div id="tags-list">Loading…</div>';
+      panel.querySelectorAll('.filter-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          panel.querySelectorAll('.filter-btn').forEach(function (x) { x.classList.toggle('active', x === b); });
+          loadTagsList(b.dataset.tagFilter);
+        });
+      });
+      await loadTagsList('');
+    }
+
+    async function loadTagsList(filter) {
+      var url = '/api/intelligence/tags' + (filter ? '?tag_type=' + filter : '');
+      var res = await fetch(url, { headers: authHeaders() });
+      if (handleAuthError(res)) return;
+      var data = await res.json();
+      var tags = data.tags || [];
+      var wrap = document.getElementById('tags-list');
+      if (!wrap) return;
+      if (!tags.length) { wrap.innerHTML = '<p>No tags yet.</p>'; return; }
+      wrap.innerHTML = tags.map(function (t) {
+        return '<article class="settings-card" style="margin-bottom:8px;">' +
+          '<header>' +
+          '<a href="#" class="tag-lead-link" data-lead-id="' + t.lead_id + '" style="color:var(--accent);">' + escapeHtml(t.lead_name || t.lead_id) + '</a>' +
+          ' <span class="status-pill ' + t.tag_type + '">' + t.tag_type + '</span>' +
+          ' <span class="muted">' + formatDate(t.tagged_at) + '</span>' +
+          '</header>' +
+          '<div class="settings-card-body"><p>' + escapeHtml(t.reason) + '</p></div>' +
+          '</article>';
+      }).join('');
+      wrap.querySelectorAll('.tag-lead-link').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          showTab('leads');
+          showLeadDetail(a.dataset.leadId);
+        });
+      });
+    }
+
+    // currentLeadId global — set by showLeadDetail, used by the tag submit handler
+    var currentLeadId = null;
+
+    async function loadLeadTags(leadId) {
+      var res = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/tags', { headers: authHeaders() });
+      if (handleAuthError(res)) return;
+      var data = await res.json();
+      var tags = data.tags || [];
+      var list = document.getElementById('lead-tag-list');
+      if (!list) return;
+      list.innerHTML = tags.map(function (t) {
+        return '<li><span class="status-pill ' + t.tag_type + '">' + t.tag_type + '</span> ' +
+          escapeHtml(t.reason) + ' <span class="muted">' + formatDate(t.tagged_at) + '</span></li>';
+      }).join('') || '<li class="muted">No tags yet.</li>';
+    }
+
+    async function renderAnalytics() {
+      var panel = document.getElementById('subtab-analytics');
+      panel.innerHTML = '<div class="filter-bar">' +
+        '<label style="color:var(--text-secondary);font-size:13px;">Period ' +
+        '<select id="ana-period" style="background:var(--bg);border:1px solid var(--card-border);color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;margin-left:6px;">' +
+        '<option value="30">Last 30 days</option>' +
+        '<option value="90">Last 90 days</option>' +
+        '<option value="365">Last year</option>' +
+        '</select></label>' +
+        '<label style="color:var(--text-secondary);font-size:13px;margin-left:12px;">Compare to ' +
+        '<select id="ana-compare" style="background:var(--bg);border:1px solid var(--card-border);color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;margin-left:6px;">' +
+        '<option value="">None</option>' +
+        '<option value="previous">Previous period</option>' +
+        '<option value="quarter">Same period last quarter</option>' +
+        '<option value="year">Same period last year</option>' +
+        '</select></label>' +
+        '<button id="ana-refresh" class="btn-primary" style="margin-left:12px;">Refresh</button>' +
+        '</div>' +
+        '<div id="ana-summary"></div>' +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">' +
+        '<canvas id="ana-score-chart" width="480" height="220"></canvas>' +
+        '<canvas id="ana-segment-chart" width="480" height="220"></canvas>' +
+        '</div>' +
+        '<h4 style="margin:12px 0 6px;">Signal correlation</h4>' +
+        '<table id="ana-signal-table"></table>' +
+        '<h4 style="margin:12px 0 6px;">Funnel</h4>' +
+        '<div id="ana-funnel" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;"></div>' +
+        '<div id="ana-tag-summary" style="display:flex;flex-wrap:wrap;gap:8px;"></div>';
+      document.getElementById('ana-refresh').addEventListener('click', loadAnalytics);
+      await loadAnalytics();
+    }
+
+    async function loadAnalytics() {
+      var periodEl = document.getElementById('ana-period');
+      var compareEl = document.getElementById('ana-compare');
+      if (!periodEl) return;
+      var periodDays = parseInt(periodEl.value, 10);
+      var compare = compareEl ? compareEl.value : '';
+      var to = new Date().toISOString().slice(0, 10);
+      var from = new Date(Date.now() - periodDays * 86400000).toISOString().slice(0, 10);
+      var url = '/api/intelligence/analytics?from=' + from + '&to=' + to + (compare ? '&compare_to=' + compare : '');
+      var res = await fetch(url, { headers: authHeaders() });
+      if (handleAuthError(res)) return;
+      if (!res.ok) { showSimpleToast('Analytics load failed'); return; }
+      var data = await res.json();
+      renderAnalyticsData(data);
+    }
+
+    function renderAnalyticsData(data) {
+      var current = data.current;
+      var comparison = data.comparison;
+      var deltas = data.deltas;
+      if (!current) return;
+
+      // Score chart
+      var ctx1El = document.getElementById('ana-score-chart');
+      if (ctx1El && typeof Chart !== 'undefined') {
+        if (window.anaScoreChart) window.anaScoreChart.destroy();
+        window.anaScoreChart = new Chart(ctx1El.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: ['Hot', 'Warm', 'Cold'],
+            datasets: [
+              { label: 'Converted', data: ['hot','warm','cold'].map(function (k) { return current.score_accuracy[k] ? current.score_accuracy[k].converted : 0; }), backgroundColor: '#00ffc8' },
+              { label: 'Lost',      data: ['hot','warm','cold'].map(function (k) { return current.score_accuracy[k] ? current.score_accuracy[k].lost : 0; }), backgroundColor: '#ff5577' },
+              { label: 'Open',      data: ['hot','warm','cold'].map(function (k) { return current.score_accuracy[k] ? current.score_accuracy[k].open : 0; }), backgroundColor: '#5588ff' }
+            ]
+          },
+          options: { responsive: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.7)' } } }, scales: { x: { stacked: true, ticks: { color: 'rgba(255,255,255,0.7)' } }, y: { stacked: true, ticks: { color: 'rgba(255,255,255,0.7)', precision: 0 } } } }
+        });
+      }
+
+      // Segment chart
+      var ctx2El = document.getElementById('ana-segment-chart');
+      if (ctx2El && typeof Chart !== 'undefined') {
+        if (window.anaSegmentChart) window.anaSegmentChart.destroy();
+        var segPerf = current.segment_performance || [];
+        window.anaSegmentChart = new Chart(ctx2El.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: segPerf.map(function (s) { return s.segment; }),
+            datasets: [{ label: 'Conversion rate %', data: segPerf.map(function (s) { return parseFloat(s.rate); }), backgroundColor: '#00ffc8' }]
+          },
+          options: { indexAxis: 'y', responsive: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.7)' } } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.7)' } }, y: { ticks: { color: 'rgba(255,255,255,0.7)' } } } }
+        });
+      }
+
+      // Signal correlation table
+      var sigTable = document.getElementById('ana-signal-table');
+      if (sigTable) {
+        var sigRows = current.signal_correlation || [];
+        sigTable.innerHTML = '<thead><tr><th>Signal</th><th>Captured</th><th>Converted</th><th>Rate</th></tr></thead>' +
+          '<tbody>' + sigRows.map(function (s) {
+            return '<tr><td>' + escapeHtml(s.signal) + '</td><td>' + s.captured + '</td><td>' + s.converted + '</td><td>' + s.rate + '</td></tr>';
+          }).join('') + '</tbody>';
+      }
+
+      // Funnel cards with deltas
+      var funnelEl = document.getElementById('ana-funnel');
+      if (funnelEl) {
+        funnelEl.innerHTML = ['captured','contacted','closed','lost'].map(function (k) {
+          var cur = (current.funnel && current.funnel[k] != null) ? current.funnel[k] : 0;
+          var delta = deltas && deltas.funnel && deltas.funnel[k];
+          var arrow = delta ? (delta.direction === 'up' ? '▲' : delta.direction === 'down' ? '▼' : '━') : '';
+          var sub = delta ? (arrow + ' ' + delta.delta + ' (' + delta.rate_delta + ')') : '';
+          return '<div class="funnel-card"><h4 style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">' + k + '</h4>' +
+            '<p class="funnel-num">' + cur + '</p>' +
+            '<p class="muted">' + sub + '</p></div>';
+        }).join('');
+      }
+
+      // Tag summary
+      var tagSumEl = document.getElementById('ana-tag-summary');
+      if (tagSumEl) {
+        tagSumEl.innerHTML = '<div class="tag-stat"><b>Exemplary</b> ' + ((current.tag_summary && current.tag_summary.exemplary) || 0) + '</div>' +
+          '<div class="tag-stat"><b>Problematic</b> ' + ((current.tag_summary && current.tag_summary.problematic) || 0) + '</div>';
+      }
     }
 
     /* =========================================
@@ -2961,6 +3374,31 @@
         setTimeout(function () { toast.remove(); }, 300);
       }, 4000);
     }
+
+    // Lead tag submit — event delegation since #lead-tag-submit is created dynamically
+    document.addEventListener('click', async function (e) {
+      if (e.target && e.target.id === 'lead-tag-submit') {
+        var leadId = currentLeadId;
+        if (!leadId) return;
+        var checkedRadio = document.querySelector('input[name="lead-tag-type"]:checked');
+        var tag_type = checkedRadio ? checkedRadio.value : null;
+        var reasonEl = document.getElementById('lead-tag-reason');
+        var reason = reasonEl ? reasonEl.value.trim() : '';
+        if (!tag_type) { showSimpleToast('Choose Exemplary or Problematic'); return; }
+        if (!reason) { showSimpleToast('Reason is required'); return; }
+        var res = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/tags', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ tag_type: tag_type, reason: reason })
+        });
+        if (handleAuthError(res)) return;
+        if (!res.ok) { showSimpleToast('Tag failed'); return; }
+        showSimpleToast('Tag added');
+        if (reasonEl) reasonEl.value = '';
+        document.querySelectorAll('input[name="lead-tag-type"]').forEach(function (r) { r.checked = false; });
+        await loadLeadTags(leadId);
+      }
+    });
 
     /* =========================================
        SCRAPER — Task 10: Config panel JS
