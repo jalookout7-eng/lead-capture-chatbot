@@ -2929,6 +2929,467 @@
         console.error('addNote error:', err);
       }
     }
+
+    /* =========================================
+       SCRAPER — simple text toast helper
+       ========================================= */
+    function showSimpleToast(msg) {
+      var stack = ensureToastStack();
+      var toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = '<div class="toast-title">' + escapeHtml(msg) + '</div>';
+      stack.appendChild(toast);
+      requestAnimationFrame(function () { toast.classList.add('visible'); });
+      setTimeout(function () {
+        toast.classList.remove('visible');
+        setTimeout(function () { toast.remove(); }, 300);
+      }, 4000);
+    }
+
+    /* =========================================
+       SCRAPER — Task 10: Config panel JS
+       ========================================= */
+    var scraperConfigCache = null;
+
+    async function loadScraperConfig() {
+      try {
+        var res = await fetch('/api/scraper/config', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) { console.error('Failed to load scraper config'); return; }
+        var data = await res.json();
+        scraperConfigCache = data.config;
+        renderScraperConfig(data.config);
+      } catch (err) {
+        console.error('loadScraperConfig error:', err);
+      }
+    }
+
+    function renderScraperConfig(c) {
+      var apiKeyEl = document.getElementById('scraper-api-key');
+      if (apiKeyEl) {
+        apiKeyEl.placeholder = c.api_key ? '●●●●● (set — leave blank to keep)' : 'Enter Google Places API key';
+        apiKeyEl.value = '';
+      }
+      var maxRunEl = document.getElementById('scraper-max-run');
+      if (maxRunEl) maxRunEl.value = c.max_leads_per_run || '15';
+      var maxCatEl = document.getElementById('scraper-max-cat');
+      if (maxCatEl) maxCatEl.value = c.max_per_category || '3';
+      var prefMobEl = document.getElementById('scraper-prefer-mobile');
+      if (prefMobEl) prefMobEl.checked = c.prefer_mobile === 'true' || c.prefer_mobile === true;
+      renderScraperCategories(c.categories || []);
+      renderScraperCities(c.cities || {});
+    }
+
+    function renderScraperCategories(categories) {
+      var list = document.getElementById('scraper-categories');
+      if (!list) return;
+      list.innerHTML = '';
+      categories.forEach(function (cat) {
+        var tag = document.createElement('span');
+        tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:rgba(0,255,200,0.08);border:1px solid var(--card-border);border-radius:6px;font-size:12px;color:var(--text-primary);';
+        tag.innerHTML = escapeHtml(cat) + ' <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:13px;line-height:1;padding:0;" aria-label="Remove ' + escapeHtml(cat) + '">\xd7</button>';
+        tag.querySelector('button').addEventListener('click', function () {
+          scraperConfigCache.categories = scraperConfigCache.categories.filter(function (c) { return c !== cat; });
+          renderScraperCategories(scraperConfigCache.categories);
+        });
+        list.appendChild(tag);
+      });
+    }
+
+    function renderScraperCities(cities) {
+      var wrap = document.getElementById('scraper-cities');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      Object.entries(cities).forEach(function ([country, cityList]) {
+        var group = document.createElement('div');
+        group.style.cssText = 'margin-bottom:8px;border:1px solid var(--card-border);border-radius:8px;overflow:hidden;';
+
+        var header = document.createElement('div');
+        header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(0,255,200,0.04);cursor:pointer;';
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.innerHTML = '\xd7 Remove ' + escapeHtml(country);
+        removeBtn.style.cssText = 'background:none;border:1px solid var(--hot);color:var(--hot);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;';
+        removeBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          delete scraperConfigCache.cities[country];
+          renderScraperCities(scraperConfigCache.cities);
+        });
+        var titleSpan = document.createElement('span');
+        titleSpan.style.cssText = 'color:var(--accent);font-family:var(--mono);font-size:13px;font-weight:600;';
+        titleSpan.textContent = country;
+        header.appendChild(titleSpan);
+        header.appendChild(removeBtn);
+        group.appendChild(header);
+
+        var body = document.createElement('div');
+        body.style.cssText = 'padding:8px 12px;';
+
+        var tagsDiv = document.createElement('div');
+        tagsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
+        cityList.forEach(function (city) {
+          var t = document.createElement('span');
+          t.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:rgba(0,255,200,0.08);border:1px solid var(--card-border);border-radius:6px;font-size:12px;color:var(--text-primary);';
+          t.innerHTML = escapeHtml(city) + ' <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:13px;line-height:1;padding:0;" aria-label="Remove ' + escapeHtml(city) + '">\xd7</button>';
+          t.querySelector('button').addEventListener('click', function () {
+            scraperConfigCache.cities[country] = scraperConfigCache.cities[country].filter(function (c) { return c !== city; });
+            renderScraperCities(scraperConfigCache.cities);
+          });
+          tagsDiv.appendChild(t);
+        });
+
+        var addRow = document.createElement('div');
+        addRow.className = 'settings-add-row';
+        var cityInput = document.createElement('input');
+        cityInput.type = 'text';
+        cityInput.className = 'settings-input';
+        cityInput.placeholder = 'Add city';
+        var cityBtn = document.createElement('button');
+        cityBtn.type = 'button';
+        cityBtn.className = 'btn-add-status';
+        cityBtn.textContent = 'Add';
+        cityBtn.addEventListener('click', function () {
+          var v = cityInput.value.trim();
+          if (!v) return;
+          scraperConfigCache.cities[country] = (scraperConfigCache.cities[country] || []).concat([v]);
+          renderScraperCities(scraperConfigCache.cities);
+        });
+        addRow.appendChild(cityInput);
+        addRow.appendChild(cityBtn);
+
+        body.appendChild(tagsDiv);
+        body.appendChild(addRow);
+        group.appendChild(body);
+        wrap.appendChild(group);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var addCatBtn = document.getElementById('scraper-add-category-btn');
+      if (addCatBtn) addCatBtn.addEventListener('click', function () {
+        var input = document.getElementById('scraper-add-category');
+        var v = input.value.trim();
+        if (!v) return;
+        if (!scraperConfigCache) return;
+        scraperConfigCache.categories = (scraperConfigCache.categories || []).concat([v]);
+        input.value = '';
+        renderScraperCategories(scraperConfigCache.categories);
+      });
+
+      var addCountryBtn = document.getElementById('scraper-add-country-btn');
+      if (addCountryBtn) addCountryBtn.addEventListener('click', function () {
+        var input = document.getElementById('scraper-add-country');
+        var v = input.value.trim();
+        if (!v) return;
+        if (!scraperConfigCache) return;
+        if (scraperConfigCache.cities[v]) { showSimpleToast('Country "' + v + '" already exists'); return; }
+        scraperConfigCache.cities[v] = [];
+        input.value = '';
+        renderScraperCities(scraperConfigCache.cities);
+      });
+
+      var saveConfigBtn = document.getElementById('scraper-save-config');
+      if (saveConfigBtn) saveConfigBtn.addEventListener('click', async function () {
+        if (!scraperConfigCache) return;
+        var apiKeyInput = document.getElementById('scraper-api-key').value.trim();
+        var payload = {
+          max_leads_per_run: document.getElementById('scraper-max-run').value,
+          max_per_category: document.getElementById('scraper-max-cat').value,
+          prefer_mobile: document.getElementById('scraper-prefer-mobile').checked ? 'true' : 'false',
+          categories: scraperConfigCache.categories,
+          cities: scraperConfigCache.cities
+        };
+        if (apiKeyInput) payload.api_key = apiKeyInput;
+        try {
+          var res = await fetch('/api/scraper/config', {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify(payload)
+          });
+          if (handleAuthError(res)) return;
+          if (!res.ok) { showSimpleToast('Save failed'); return; }
+          showSimpleToast('Scraper config saved');
+          await loadScraperConfig();
+        } catch (err) {
+          console.error('saveScraperConfig error:', err);
+          showSimpleToast('Save failed');
+        }
+      });
+    });
+
+    /* =========================================
+       SCRAPER — Task 11: Run panel (chunked loop)
+       ========================================= */
+    var scraperRunning = false;
+    var scraperStopFlag = false;
+
+    function logToProgress(line) {
+      var pre = document.getElementById('scraper-progress');
+      if (!pre) return;
+      pre.textContent += line + '\n';
+      pre.scrollTop = pre.scrollHeight;
+    }
+
+    function buildScraperChunks(config) {
+      var cities = config.cities || {};
+      var categories = config.categories || [];
+      var chunks = [];
+      Object.entries(cities).forEach(function ([country, cityList]) {
+        cityList.forEach(function (city) {
+          categories.forEach(function (cat) {
+            chunks.push({ country: country, city: city, category: cat });
+          });
+        });
+      });
+      // Jakarta first (largest market)
+      chunks.sort(function (a, b) {
+        var aJak = a.city === 'Jakarta' ? 0 : 1;
+        var bJak = b.city === 'Jakarta' ? 0 : 1;
+        return aJak - bJak;
+      });
+      return chunks;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var runBtn = document.getElementById('scraper-run-btn');
+      if (runBtn) runBtn.addEventListener('click', async function () {
+        if (scraperRunning) return;
+        scraperRunning = true;
+        scraperStopFlag = false;
+        var progressEl = document.getElementById('scraper-progress');
+        if (progressEl) progressEl.textContent = '';
+        runBtn.disabled = true;
+        var stopBtn = document.getElementById('scraper-stop-btn');
+        if (stopBtn) stopBtn.style.display = 'inline-block';
+
+        await loadScraperConfig();
+        var maxRun = parseInt((scraperConfigCache && scraperConfigCache.max_leads_per_run) || '15', 10);
+        var chunks = scraperConfigCache ? buildScraperChunks(scraperConfigCache) : [];
+        var total = 0;
+
+        for (var i = 0; i < chunks.length; i++) {
+          var chunk = chunks[i];
+          if (scraperStopFlag) { logToProgress('Stopped by user.'); break; }
+          if (total >= maxRun) { logToProgress('Reached max leads per run (' + maxRun + ').'); break; }
+          logToProgress('Searching ' + chunk.category + ' in ' + chunk.city + '…');
+          try {
+            var res = await fetch('/api/scraper/run-chunk', {
+              method: 'POST',
+              headers: authHeaders(),
+              body: JSON.stringify(chunk)
+            });
+            if (handleAuthError(res)) break;
+            var data = await res.json();
+            if (!res.ok) {
+              logToProgress('  ⚠ ' + (data.error || 'Error'));
+              if (res.status === 400) break;
+              continue;
+            }
+            total += data.inserted;
+            logToProgress('  +' + data.inserted + ' new' + (data.skipped ? ' (' + data.skipped + ' skipped)' : ''));
+          } catch (err) {
+            logToProgress('  ⚠ Network error: ' + err.message);
+          }
+        }
+
+        logToProgress('Done — ' + total + ' new leads added.');
+        scraperRunning = false;
+        runBtn.disabled = false;
+        if (stopBtn) stopBtn.style.display = 'none';
+        await loadScrapedLeads();
+      });
+
+      var stopBtn2 = document.getElementById('scraper-stop-btn');
+      if (stopBtn2) stopBtn2.addEventListener('click', function () {
+        scraperStopFlag = true;
+      });
+    });
+
+    /* =========================================
+       SCRAPER — Task 12: Scraped leads table + transfer modal
+       ========================================= */
+    var scrapedLeadsCache = [];
+
+    async function loadScrapedLeads() {
+      try {
+        var res = await fetch('/api/scraper/leads', { headers: authHeaders() });
+        if (handleAuthError(res)) return;
+        if (!res.ok) { console.error('Failed to load scraped leads'); return; }
+        var data = await res.json();
+        scrapedLeadsCache = data.leads || [];
+        populateScraperFilters(scrapedLeadsCache);
+        renderScrapedLeads(applyScraperFilters(scrapedLeadsCache));
+      } catch (err) {
+        console.error('loadScrapedLeads error:', err);
+      }
+    }
+
+    var SCRAPED_STATUS_OPTIONS = ['New', 'Called – No Answer', 'Called – Spoke', 'Interested', 'Not Interested'];
+
+    function populateScraperFilters(leads) {
+      fillScraperSelect('scraper-filter-status', SCRAPED_STATUS_OPTIONS);
+      var cats = leads.map(function (l) { return l.category; }).filter(Boolean);
+      fillScraperSelect('scraper-filter-category', uniqArr(cats).sort());
+      var countries = leads.map(function (l) { return l.country; }).filter(Boolean);
+      fillScraperSelect('scraper-filter-country', uniqArr(countries).sort());
+    }
+
+    function fillScraperSelect(id, opts) {
+      var sel = document.getElementById(id);
+      if (!sel) return;
+      var current = sel.value;
+      sel.innerHTML = '<option value="">All</option>';
+      opts.forEach(function (v) {
+        var o = document.createElement('option');
+        o.value = v; o.textContent = v;
+        sel.appendChild(o);
+      });
+      sel.value = current;
+    }
+
+    function uniqArr(arr) { return arr.filter(function (v, i, a) { return a.indexOf(v) === i; }); }
+
+    function applyScraperFilters(leads) {
+      var s = document.getElementById('scraper-filter-status') ? document.getElementById('scraper-filter-status').value : '';
+      var c = document.getElementById('scraper-filter-category') ? document.getElementById('scraper-filter-category').value : '';
+      var co = document.getElementById('scraper-filter-country') ? document.getElementById('scraper-filter-country').value : '';
+      return leads.filter(function (l) {
+        return (!s || l.status === s) && (!c || l.category === c) && (!co || l.country === co);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      ['scraper-filter-status', 'scraper-filter-category', 'scraper-filter-country'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', function () {
+          renderScrapedLeads(applyScraperFilters(scrapedLeadsCache));
+        });
+      });
+    });
+
+    function escapeAttr(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    }
+
+    function domainOf(url) {
+      try { return new URL(url).hostname; } catch (_) { return url; }
+    }
+
+    function renderScrapedLeads(leads) {
+      var tbody = document.getElementById('scraper-leads-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!leads.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="padding:16px;text-align:center;color:var(--text-secondary);font-size:13px;">No scraped leads yet. Run the scraper to populate this list.</td></tr>';
+        return;
+      }
+      leads.forEach(function (l) {
+        var tr = document.createElement('tr');
+        tr.style.cssText = 'border-bottom:1px solid rgba(0,255,200,0.05);transition:background 0.15s;';
+        tr.onmouseenter = function () { this.style.background = 'rgba(0,255,200,0.04)'; };
+        tr.onmouseleave = function () { this.style.background = ''; };
+
+        var websiteCell = l.website
+          ? '<a href="' + escapeAttr(l.website) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:11px;">' + escapeHtml(domainOf(l.website)) + '</a>'
+          : '';
+
+        tr.innerHTML =
+          '<td style="padding:10px 8px;">' + escapeHtml(l.name || '') + '</td>' +
+          '<td style="padding:10px 8px;color:var(--text-secondary);">' + escapeHtml(l.category || '') + '</td>' +
+          '<td style="padding:10px 8px;color:var(--text-secondary);">' + escapeHtml(l.city || '') + '</td>' +
+          '<td style="padding:10px 8px;color:var(--text-secondary);">' + escapeHtml(l.country || '') + '</td>' +
+          '<td style="padding:10px 8px;font-family:var(--mono);font-size:11px;">' + escapeHtml(l.phone || '') + '</td>' +
+          '<td style="padding:10px 8px;">' + websiteCell + '</td>' +
+          '<td style="padding:10px 8px;font-family:var(--mono);font-size:11px;color:var(--accent);">' + (l.google_rating != null ? l.google_rating : '') + '</td>' +
+          '<td style="padding:10px 8px;"></td>' +
+          '<td style="padding:10px 8px;"><button type="button" class="btn-add-status" style="font-size:11px;padding:5px 10px;">Transfer →</button></td>';
+
+        // Status select
+        var sel = document.createElement('select');
+        sel.className = 'status-select';
+        SCRAPED_STATUS_OPTIONS.forEach(function (opt) {
+          var o = document.createElement('option');
+          o.value = opt; o.textContent = opt;
+          if (opt === l.status) o.selected = true;
+          sel.appendChild(o);
+        });
+        sel.addEventListener('change', async function () {
+          try {
+            var res = await fetch('/api/scraper/leads/' + encodeURIComponent(l.id) + '/status', {
+              method: 'PATCH',
+              headers: authHeaders(),
+              body: JSON.stringify({ status: sel.value })
+            });
+            if (handleAuthError(res)) return;
+            if (!res.ok) { showSimpleToast('Status update failed'); sel.value = l.status; return; }
+            l.status = sel.value;
+          } catch (err) {
+            console.error('scraper status update error:', err);
+          }
+        });
+        tr.children[7].appendChild(sel);
+
+        tr.querySelector('button').addEventListener('click', function () { openTransferModal(l); });
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* Transfer modal */
+    var scraperTransferTarget = null;
+
+    function openTransferModal(lead) {
+      scraperTransferTarget = lead;
+      var summary = document.getElementById('scraper-transfer-summary');
+      if (summary) {
+        summary.innerHTML =
+          '<dt style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;">Business</dt><dd style="color:var(--text-primary);">' + escapeHtml(lead.name) + '</dd>' +
+          '<dt style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;margin-top:4px;">Phone</dt><dd style="font-family:var(--mono);font-size:12px;">' + escapeHtml(lead.phone || '—') + '</dd>' +
+          '<dt style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;margin-top:4px;">Website</dt><dd>' + (lead.website ? '<a href="' + escapeAttr(lead.website) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">' + escapeHtml(lead.website) + '</a>' : '—') + '</dd>' +
+          '<dt style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;margin-top:4px;">Category</dt><dd>' + escapeHtml(lead.category || '—') + '</dd>' +
+          '<dt style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;margin-top:4px;">City</dt><dd>' + escapeHtml(lead.city || '—') + '</dd>' +
+          '<dt style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;margin-top:4px;">Rating</dt><dd>' + (lead.google_rating != null ? lead.google_rating : '—') + '/5</dd>';
+      }
+      var emailEl = document.getElementById('scraper-transfer-email');
+      if (emailEl) emailEl.value = '';
+      var notesEl = document.getElementById('scraper-transfer-notes');
+      if (notesEl) notesEl.value = 'Source: Google Maps Scraper. Rating: ' + (lead.google_rating != null ? lead.google_rating : 'n/a') + '/5. City: ' + (lead.city || '') + ', ' + (lead.country || '') + '.';
+      var modal = document.getElementById('scraper-transfer-modal');
+      if (modal) { modal.hidden = false; modal.style.display = 'flex'; }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var closeBtn = document.getElementById('scraper-transfer-close');
+      if (closeBtn) closeBtn.addEventListener('click', function () {
+        var modal = document.getElementById('scraper-transfer-modal');
+        if (modal) { modal.hidden = true; modal.style.display = 'none'; }
+        scraperTransferTarget = null;
+      });
+
+      var confirmBtn = document.getElementById('scraper-transfer-confirm');
+      if (confirmBtn) confirmBtn.addEventListener('click', async function () {
+        if (!scraperTransferTarget) return;
+        var email = (document.getElementById('scraper-transfer-email').value || '').trim();
+        var notes = (document.getElementById('scraper-transfer-notes').value || '').trim();
+        try {
+          var res = await fetch('/api/scraper/leads/' + encodeURIComponent(scraperTransferTarget.id) + '/transfer', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ email: email || undefined, notes: notes || undefined })
+          });
+          if (handleAuthError(res)) return;
+          if (!res.ok) { showSimpleToast('Transfer failed'); return; }
+          showSimpleToast('Transferred to Leads');
+          var modal = document.getElementById('scraper-transfer-modal');
+          if (modal) { modal.hidden = true; modal.style.display = 'none'; }
+          scraperTransferTarget = null;
+          await loadScrapedLeads();
+        } catch (err) {
+          console.error('transfer error:', err);
+          showSimpleToast('Transfer failed');
+        }
+      });
+    });
+
   </script>
 </body>
 </html>
