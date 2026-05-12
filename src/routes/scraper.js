@@ -1,6 +1,9 @@
 const express = require('express');
+const { randomUUID } = require('crypto');
 const { requireAuth } = require('../middleware/auth');
 const { loadAllConfig, setConfig } = require('../services/config-store');
+const { getClient } = require('../db/client');
+const { searchBusinesses, getPlaceDetails, isMobileNumber } = require('../services/scraper');
 
 const router = express.Router();
 
@@ -52,6 +55,88 @@ router.patch('/scraper/config', requireAuth, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Scraper config PATCH error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/scraper/run-chunk', requireAuth, async (req, res) => {
+  const { city, country, category } = req.body || {};
+  if (!city || !country || !category) {
+    return res.status(400).json({ error: 'city, country, and category are required' });
+  }
+
+  try {
+    const all = await loadAllConfig();
+    const apiKey = all.api_key;
+    if (!apiKey) {
+      return res.status(400).json({ error: 'api_key is not configured. Set it in the Scraper config panel.' });
+    }
+    const maxPerCategory = parseInt(all.max_per_category || '3', 10);
+    const preferMobile = (all.prefer_mobile || 'true') === 'true';
+
+    let searchResults;
+    try {
+      searchResults = await searchBusinesses(apiKey, city, category);
+    } catch (err) {
+      console.error('Google Places search error:', err.message);
+      return res.status(503).json({ error: 'Google Places API error', detail: err.message });
+    }
+
+    const client = getClient();
+    const inserted = [];
+    let skipped = 0;
+
+    for (const summary of searchResults) {
+      if (inserted.length >= maxPerCategory) break;
+
+      let details;
+      try {
+        details = await getPlaceDetails(apiKey, summary.place_id);
+      } catch (err) {
+        console.error('Place details error for', summary.place_id, err.message);
+        continue;
+      }
+
+      if (preferMobile && !isMobileNumber(details.phone)) {
+        skipped++;
+        continue;
+      }
+
+      const existing = await client.execute({
+        sql: 'SELECT id FROM scraped_leads WHERE place_id = ?',
+        args: [details.placeId]
+      });
+      if (existing.rows.length) {
+        skipped++;
+        continue;
+      }
+
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      await client.execute({
+        sql: `INSERT INTO scraped_leads
+              (id, place_id, name, category, city, country, address, phone, website, google_rating, total_reviews, google_maps_url, status, transferred, scraped_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 0, ?)`,
+        args: [
+          id, details.placeId, details.name, category, city, country,
+          details.address, details.phone, details.website,
+          details.rating, details.totalReviews, details.mapsUrl, now
+        ]
+      });
+
+      inserted.push({
+        id,
+        name: details.name,
+        city,
+        phone: details.phone,
+        website: details.website,
+        google_rating: details.rating
+      });
+    }
+
+    res.json({ inserted: inserted.length, skipped, leads: inserted });
+  } catch (err) {
+    console.error('Scraper run-chunk error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
