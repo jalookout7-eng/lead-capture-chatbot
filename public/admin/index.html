@@ -3175,6 +3175,125 @@
       }).join('') || '<li class="muted">No tags yet.</li>';
     }
 
+    async function renderAnalytics() {
+      var panel = document.getElementById('subtab-analytics');
+      panel.innerHTML = '<div class="filter-bar">' +
+        '<label style="color:var(--text-secondary);font-size:13px;">Period ' +
+        '<select id="ana-period" style="background:var(--bg);border:1px solid var(--card-border);color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;margin-left:6px;">' +
+        '<option value="30">Last 30 days</option>' +
+        '<option value="90">Last 90 days</option>' +
+        '<option value="365">Last year</option>' +
+        '</select></label>' +
+        '<label style="color:var(--text-secondary);font-size:13px;margin-left:12px;">Compare to ' +
+        '<select id="ana-compare" style="background:var(--bg);border:1px solid var(--card-border);color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;margin-left:6px;">' +
+        '<option value="">None</option>' +
+        '<option value="previous">Previous period</option>' +
+        '<option value="quarter">Same period last quarter</option>' +
+        '<option value="year">Same period last year</option>' +
+        '</select></label>' +
+        '<button id="ana-refresh" class="btn-primary" style="margin-left:12px;">Refresh</button>' +
+        '</div>' +
+        '<div id="ana-summary"></div>' +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">' +
+        '<canvas id="ana-score-chart" width="480" height="220"></canvas>' +
+        '<canvas id="ana-segment-chart" width="480" height="220"></canvas>' +
+        '</div>' +
+        '<h4 style="margin:12px 0 6px;">Signal correlation</h4>' +
+        '<table id="ana-signal-table"></table>' +
+        '<h4 style="margin:12px 0 6px;">Funnel</h4>' +
+        '<div id="ana-funnel" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;"></div>' +
+        '<div id="ana-tag-summary" style="display:flex;flex-wrap:wrap;gap:8px;"></div>';
+      document.getElementById('ana-refresh').addEventListener('click', loadAnalytics);
+      await loadAnalytics();
+    }
+
+    async function loadAnalytics() {
+      var periodEl = document.getElementById('ana-period');
+      var compareEl = document.getElementById('ana-compare');
+      if (!periodEl) return;
+      var periodDays = parseInt(periodEl.value, 10);
+      var compare = compareEl ? compareEl.value : '';
+      var to = new Date().toISOString().slice(0, 10);
+      var from = new Date(Date.now() - periodDays * 86400000).toISOString().slice(0, 10);
+      var url = '/api/intelligence/analytics?from=' + from + '&to=' + to + (compare ? '&compare_to=' + compare : '');
+      var res = await fetch(url, { headers: authHeaders() });
+      if (handleAuthError(res)) return;
+      if (!res.ok) { showSimpleToast('Analytics load failed'); return; }
+      var data = await res.json();
+      renderAnalyticsData(data);
+    }
+
+    function renderAnalyticsData(data) {
+      var current = data.current;
+      var comparison = data.comparison;
+      var deltas = data.deltas;
+      if (!current) return;
+
+      // Score chart
+      var ctx1El = document.getElementById('ana-score-chart');
+      if (ctx1El && typeof Chart !== 'undefined') {
+        if (window.anaScoreChart) window.anaScoreChart.destroy();
+        window.anaScoreChart = new Chart(ctx1El.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: ['Hot', 'Warm', 'Cold'],
+            datasets: [
+              { label: 'Converted', data: ['hot','warm','cold'].map(function (k) { return current.score_accuracy[k] ? current.score_accuracy[k].converted : 0; }), backgroundColor: '#00ffc8' },
+              { label: 'Lost',      data: ['hot','warm','cold'].map(function (k) { return current.score_accuracy[k] ? current.score_accuracy[k].lost : 0; }), backgroundColor: '#ff5577' },
+              { label: 'Open',      data: ['hot','warm','cold'].map(function (k) { return current.score_accuracy[k] ? current.score_accuracy[k].open : 0; }), backgroundColor: '#5588ff' }
+            ]
+          },
+          options: { responsive: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.7)' } } }, scales: { x: { stacked: true, ticks: { color: 'rgba(255,255,255,0.7)' } }, y: { stacked: true, ticks: { color: 'rgba(255,255,255,0.7)', precision: 0 } } } }
+        });
+      }
+
+      // Segment chart
+      var ctx2El = document.getElementById('ana-segment-chart');
+      if (ctx2El && typeof Chart !== 'undefined') {
+        if (window.anaSegmentChart) window.anaSegmentChart.destroy();
+        var segPerf = current.segment_performance || [];
+        window.anaSegmentChart = new Chart(ctx2El.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: segPerf.map(function (s) { return s.segment; }),
+            datasets: [{ label: 'Conversion rate %', data: segPerf.map(function (s) { return parseFloat(s.rate); }), backgroundColor: '#00ffc8' }]
+          },
+          options: { indexAxis: 'y', responsive: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.7)' } } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.7)' } }, y: { ticks: { color: 'rgba(255,255,255,0.7)' } } } }
+        });
+      }
+
+      // Signal correlation table
+      var sigTable = document.getElementById('ana-signal-table');
+      if (sigTable) {
+        var sigRows = current.signal_correlation || [];
+        sigTable.innerHTML = '<thead><tr><th>Signal</th><th>Captured</th><th>Converted</th><th>Rate</th></tr></thead>' +
+          '<tbody>' + sigRows.map(function (s) {
+            return '<tr><td>' + escapeHtml(s.signal) + '</td><td>' + s.captured + '</td><td>' + s.converted + '</td><td>' + s.rate + '</td></tr>';
+          }).join('') + '</tbody>';
+      }
+
+      // Funnel cards with deltas
+      var funnelEl = document.getElementById('ana-funnel');
+      if (funnelEl) {
+        funnelEl.innerHTML = ['captured','contacted','closed','lost'].map(function (k) {
+          var cur = (current.funnel && current.funnel[k] != null) ? current.funnel[k] : 0;
+          var delta = deltas && deltas.funnel && deltas.funnel[k];
+          var arrow = delta ? (delta.direction === 'up' ? '▲' : delta.direction === 'down' ? '▼' : '━') : '';
+          var sub = delta ? (arrow + ' ' + delta.delta + ' (' + delta.rate_delta + ')') : '';
+          return '<div class="funnel-card"><h4 style="color:var(--text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">' + k + '</h4>' +
+            '<p class="funnel-num">' + cur + '</p>' +
+            '<p class="muted">' + sub + '</p></div>';
+        }).join('');
+      }
+
+      // Tag summary
+      var tagSumEl = document.getElementById('ana-tag-summary');
+      if (tagSumEl) {
+        tagSumEl.innerHTML = '<div class="tag-stat"><b>Exemplary</b> ' + ((current.tag_summary && current.tag_summary.exemplary) || 0) + '</div>' +
+          '<div class="tag-stat"><b>Problematic</b> ' + ((current.tag_summary && current.tag_summary.problematic) || 0) + '</div>';
+      }
+    }
+
     /* =========================================
        NOTES LOG (per-lead)
        ========================================= */
