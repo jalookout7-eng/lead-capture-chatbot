@@ -331,3 +331,85 @@ describe('PATCH /api/scraper/leads/:id/status', () => {
     }
   });
 });
+
+describe('POST /api/scraper/leads/:id/transfer', () => {
+  test('returns 401 without auth', async () => {
+    const res = await request(app).post('/api/scraper/leads/abc/transfer').send({});
+    expect(res.status).toBe(401);
+  });
+
+  test('returns 404 when scraped lead not found', async () => {
+    mockExecute.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app)
+      .post('/api/scraper/leads/missing/transfer')
+      .set(authHeader)
+      .send({});
+    expect(res.status).toBe(404);
+  });
+
+  test('returns 409 if already transferred', async () => {
+    mockExecute.mockResolvedValueOnce({
+      rows: [{ id: 'abc', transferred: 1 }]
+    });
+    const res = await request(app)
+      .post('/api/scraper/leads/abc/transfer')
+      .set(authHeader)
+      .send({});
+    expect(res.status).toBe(409);
+  });
+
+  test('inserts into leads, flips transferred=1, returns new leadId', async () => {
+    mockExecute
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'abc', name: 'Salon One', phone: '08111', category: 'salon',
+          city: 'Jakarta', country: 'Indonesia', google_rating: 4.5,
+          website: 'https://salon-one', transferred: 0
+        }]
+      })
+      .mockResolvedValueOnce({ rowsAffected: 1 })  // INSERT leads
+      .mockResolvedValueOnce({ rowsAffected: 1 }); // UPDATE scraped_leads
+    const res = await request(app)
+      .post('/api/scraper/leads/abc/transfer')
+      .set(authHeader)
+      .send({ email: 'test@example.com', notes: 'Worth a call' });
+    expect(res.status).toBe(200);
+    expect(res.body.leadId).toBeDefined();
+  });
+
+  test('omits email when not provided (null)', async () => {
+    let insertedArgs = null;
+    mockExecute
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'abc', name: 'A', phone: '08', category: 'salon',
+          city: 'Jakarta', country: 'Indonesia', google_rating: 4.5,
+          website: 'https://a', transferred: 0
+        }]
+      })
+      .mockImplementationOnce(({ args }) => { insertedArgs = args; return { rowsAffected: 1 }; })
+      .mockResolvedValueOnce({ rowsAffected: 1 });
+    await request(app).post('/api/scraper/leads/abc/transfer').set(authHeader).send({ notes: 'x' });
+    // email column is 3rd arg in the INSERT (id, name, email, ...)
+    expect(insertedArgs[2]).toBeNull();
+  });
+
+  test('notes default includes scraper source line', async () => {
+    let insertedArgs = null;
+    mockExecute
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'abc', name: 'A', phone: '08', category: 'salon',
+          city: 'Jakarta', country: 'Indonesia', google_rating: 4.5,
+          website: 'https://a', transferred: 0
+        }]
+      })
+      .mockImplementationOnce(({ args }) => { insertedArgs = args; return { rowsAffected: 1 }; })
+      .mockResolvedValueOnce({ rowsAffected: 1 });
+    await request(app).post('/api/scraper/leads/abc/transfer').set(authHeader).send({});
+    const notesArg = insertedArgs.find(a => typeof a === 'string' && a.includes('Source: Google Maps Scraper'));
+    expect(notesArg).toMatch(/Source: Google Maps Scraper/);
+    expect(notesArg).toMatch(/Rating: 4\.5\/5/);
+    expect(notesArg).toMatch(/City: Jakarta, Indonesia/);
+  });
+});

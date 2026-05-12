@@ -177,4 +177,41 @@ router.patch('/scraper/leads/:id/status', requireAuth, async (req, res) => {
   }
 });
 
+router.post('/scraper/leads/:id/transfer', requireAuth, async (req, res) => {
+  const { email, notes } = req.body || {};
+  const scrapedId = req.params.id;
+  try {
+    const client = getClient();
+    const found = await client.execute({
+      sql: 'SELECT * FROM scraped_leads WHERE id = ?',
+      args: [scrapedId]
+    });
+    if (!found.rows.length) return res.status(404).json({ error: 'Scraped lead not found' });
+    const s = found.rows[0];
+    if (s.transferred) return res.status(409).json({ error: 'Already transferred' });
+
+    const newLeadId = randomUUID();
+    const now = new Date().toISOString();
+    const sourceLine = `Source: Google Maps Scraper. Rating: ${s.google_rating ?? 'n/a'}/5. City: ${s.city}, ${s.country}.`;
+    const fullNotes = notes ? `${sourceLine}\n\n${notes}` : sourceLine;
+
+    await client.execute({
+      sql: `INSERT INTO leads
+            (id, name, email, product, phone, website, summary, bottlenecks, score, followup, followup_sent, notes, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, '', '[]', 'cold', '', 0, ?, 'new', ?)`,
+      args: [newLeadId, s.name, email || null, s.category || 'other', s.phone || null, s.website || null, fullNotes, now]
+    });
+
+    await client.execute({
+      sql: 'UPDATE scraped_leads SET transferred = 1, transferred_lead_id = ? WHERE id = ?',
+      args: [newLeadId, scrapedId]
+    });
+
+    res.json({ leadId: newLeadId });
+  } catch (err) {
+    console.error('Scraper transfer error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
