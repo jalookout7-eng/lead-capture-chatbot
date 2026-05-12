@@ -12,7 +12,8 @@
     "test": "jest --runInBand",
     "migrate:v2": "node scripts/migrate-v2.js",
     "migrate:v4": "node scripts/migrate-v4.js",
-    "migrate:v5": "node scripts/migrate-v5.js"
+    "migrate:v5": "node scripts/migrate-v5.js",
+    "migrate:v6": "node scripts/migrate-v6.js"
   },
   "jest": {
     "testEnvironment": "node"
