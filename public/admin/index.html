@@ -2972,6 +2972,132 @@
       return new Date(iso).toLocaleString();
     }
 
+    async function renderCurrentVersion() {
+      var panel = document.getElementById('subtab-current');
+      panel.innerHTML = '<p>Loading…</p>';
+      var res = await fetch('/api/intelligence/active', { headers: authHeaders() });
+      if (handleAuthError(res)) return;
+      if (res.status === 503) { panel.innerHTML = '<p>No active intelligence version.</p>'; return; }
+      var data = await res.json();
+      var version = data.version;
+      var rules = {};
+      try { rules = JSON.parse(version.scoring_rules || '{}'); } catch (e) { rules = {}; }
+      panel.innerHTML = '<div class="settings-card">' +
+        '<header><h3>Active: v' + version.version_number + '</h3>' +
+        '<p>Published ' + formatDate(version.published_at) + ' by ' + escapeHtml(version.published_by || '—') + '</p>' +
+        '<p class="muted">core_hash: <code>' + (version.core_hash || '').slice(0, 12) + '…</code></p>' +
+        '</header></div>' +
+        '<details class="settings-card" open style="margin-top:12px;"><summary>Lessons Learned</summary>' +
+        '<div class="settings-card-body"><pre class="lessons-md">' + escapeHtml(version.lessons_learned || '(none)') + '</pre></div>' +
+        '</details>' +
+        '<details class="settings-card" open style="margin-top:12px;"><summary>Scoring Rules</summary>' +
+        '<div class="settings-card-body">' +
+        '<h4>Weights</h4>' +
+        '<table class="weights-table">' +
+        Object.entries(rules.weights || {}).sort(function (a, b) { return Math.abs(b[1]) - Math.abs(a[1]); })
+          .map(function (kv) { return '<tr><td>' + escapeHtml(kv[0]) + '</td><td>' + (kv[1] > 0 ? '+' : '') + kv[1] + '</td></tr>'; }).join('') +
+        '</table>' +
+        '<h4>Thresholds</h4>' +
+        '<p>Hot ≥ ' + ((rules.thresholds && rules.thresholds.hot) != null ? rules.thresholds.hot : '—') +
+        ' · Warm ≥ ' + ((rules.thresholds && rules.thresholds.warm) != null ? rules.thresholds.warm : '—') + '</p>' +
+        '<h4>Signal examples</h4>' +
+        '<p><b>Hot:</b> ' + ((rules.signals && rules.signals.hot_signals) || []).map(escapeHtml).join(', ') + '</p>' +
+        '<p><b>Warm:</b> ' + ((rules.signals && rules.signals.warm_signals) || []).map(escapeHtml).join(', ') + '</p>' +
+        '<p><b>Cold:</b> ' + ((rules.signals && rules.signals.cold_signals) || []).map(escapeHtml).join(', ') + '</p>' +
+        '</div></details>';
+    }
+
+    async function renderPendingVersions() {
+      var panel = document.getElementById('subtab-pending');
+      panel.innerHTML = '<p>Loading…</p>';
+      var res = await fetch('/api/intelligence/versions?status=pending', { headers: authHeaders() });
+      if (handleAuthError(res)) return;
+      var data = await res.json();
+      var versions = data.versions || [];
+      if (!versions.length) { panel.innerHTML = '<p>No pending versions.</p>'; return; }
+      panel.innerHTML = versions.map(function (v) {
+        return '<article class="settings-card" data-version-id="' + v.id + '" style="margin-bottom:12px;">' +
+          '<header><b>v' + v.version_number + '</b> · ' + escapeHtml(v.source) + ' · created ' + formatDate(v.created_at) + '</header>' +
+          '<div class="settings-card-body">' +
+          '<p>' + escapeHtml(v.changelog || '') + '</p>' +
+          '<button class="btn-publish" style="margin-top:8px;">Publish</button>' +
+          '<button class="btn-reject">Reject</button>' +
+          '</div></article>';
+      }).join('');
+      panel.querySelectorAll('.btn-publish').forEach(function (btn) {
+        btn.addEventListener('click', function () { publishVersion(btn.closest('[data-version-id]').dataset.versionId); });
+      });
+      panel.querySelectorAll('.btn-reject').forEach(function (btn) {
+        btn.addEventListener('click', function () { rejectVersion(btn.closest('[data-version-id]').dataset.versionId); });
+      });
+    }
+
+    async function publishVersion(id) {
+      if (!confirm('Publish this version? The current active version will be archived.')) return;
+      var res = await fetch('/api/intelligence/versions/' + id + '/publish', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ published_by: 'admin' })
+      });
+      if (handleAuthError(res)) return;
+      if (!res.ok) { showSimpleToast('Publish failed'); return; }
+      showSimpleToast('Version published');
+      intelligenceInited = false;
+      await initIntelligenceTab();
+      await renderPendingVersions();
+    }
+
+    async function rejectVersion(id) {
+      var reason = prompt('Reason for rejection (optional):') || '';
+      var res = await fetch('/api/intelligence/versions/' + id + '/reject', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ reason: reason })
+      });
+      if (handleAuthError(res)) return;
+      if (!res.ok) { showSimpleToast('Reject failed'); return; }
+      showSimpleToast('Version rejected');
+      await renderPendingVersions();
+    }
+
+    async function renderHistoryVersions() {
+      var panel = document.getElementById('subtab-history');
+      panel.innerHTML = '<p>Loading…</p>';
+      var archivedRes = await fetch('/api/intelligence/versions?status=archived', { headers: authHeaders() });
+      if (handleAuthError(archivedRes)) return;
+      var rejectedRes = await fetch('/api/intelligence/versions?status=rejected', { headers: authHeaders() });
+      if (handleAuthError(rejectedRes)) return;
+      var archived = (await archivedRes.json()).versions || [];
+      var rejected = (await rejectedRes.json()).versions || [];
+      var all = archived.concat(rejected).sort(function (a, b) { return b.version_number - a.version_number; });
+      if (!all.length) { panel.innerHTML = '<p>No archived or rejected versions yet.</p>'; return; }
+      panel.innerHTML = all.map(function (v) {
+        return '<article class="settings-card" data-version-id="' + v.id + '" style="margin-bottom:12px;">' +
+          '<header><b>v' + v.version_number + '</b> · <span class="status-pill ' + v.status + '">' + v.status + '</span>' +
+          ' · ' + formatDate(v.published_at) + ' → ' + formatDate(v.archived_at) + '</header>' +
+          '<div class="settings-card-body">' +
+          '<p>' + escapeHtml(v.changelog || '') + '</p>' +
+          (v.status === 'archived' ? '<button class="btn-rollback" style="margin-top:8px;">Rollback to this version</button>' : '') +
+          '</div></article>';
+      }).join('');
+      panel.querySelectorAll('.btn-rollback').forEach(function (btn) {
+        btn.addEventListener('click', function () { rollbackVersion(btn.closest('[data-version-id]').dataset.versionId); });
+      });
+    }
+
+    async function rollbackVersion(id) {
+      if (!confirm('Rollback to this archived version? The current active version will be archived.')) return;
+      var res = await fetch('/api/intelligence/versions/' + id + '/rollback', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ published_by: 'admin' })
+      });
+      if (handleAuthError(res)) return;
+      if (!res.ok) { showSimpleToast('Rollback failed'); return; }
+      showSimpleToast('Rolled back');
+      await renderHistoryVersions();
+    }
+
     /* =========================================
        NOTES LOG (per-lead)
        ========================================= */
