@@ -12,6 +12,7 @@ const notificationsRoute = require('./routes/notifications');
 const followupRoute = require('./routes/followup');
 const marketRoute = require('./routes/market');
 const scraperRoute = require('./routes/scraper');
+const intelligenceRoute = require('./routes/intelligence');
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
@@ -25,6 +26,7 @@ app.use('/api', notificationsRoute);
 app.use('/api/followup', followupRoute);
 app.use('/api/market', marketRoute);
 app.use('/api', scraperRoute);
+app.use('/api', intelligenceRoute);
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
