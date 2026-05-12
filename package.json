@@ -12,7 +12,8 @@
     "test": "jest --runInBand",
     "migrate:v2": "node scripts/migrate-v2.js",
     "migrate:v4": "node scripts/migrate-v4.js",
-    "migrate:v5": "node scripts/migrate-v5.js"
+    "migrate:v5": "node scripts/migrate-v5.js",
+    "migrate:v6": "node scripts/migrate-v6.js"
   },
   "jest": {
     "testEnvironment": "node"
@@ -22,6 +23,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@googlemaps/google-maps-services-js": "^3.4.2",
     "@libsql/client": "^0.17.2",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
