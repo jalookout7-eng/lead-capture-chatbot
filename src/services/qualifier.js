@@ -1,31 +1,35 @@
 const ai = require('./ai');
+const { getActiveIntelligenceVersion, buildQualifierPrompt } = require('./intelligence');
 
-const QUALIFIER_PROMPT = `You are analysing a lead conversation for 3D Visual Pro, a Dubai-based team offering AI automation, modern websites, digital marketing, and business consultancy.
-
-Based on the conversation history provided, return a JSON object with exactly these fields:
-
-{
-  "summary": "2-3 sentence summary of who this person is and what they need",
-  "bottlenecks": ["bottleneck 1", "bottleneck 2"],
-  "score": "hot|warm|cold",
-  "followup": "Personalised follow-up message from the 3D Visual Pro team, addressing their specific situation"
-}
-
-Scoring rubric:
-- hot: clear business need identified, specific use case discussed, decision-maker present
-- warm: engaged and interested but requirements are vague or exploratory
-- cold: information gathering only, no clear need, or disengaged
-
-Return ONLY the JSON object, no markdown, no explanation.`;
+const FALLBACK_RULES = {
+  weights: {
+    budget_mentioned: 10, specific_pain_point: 8, decision_maker_present: 12,
+    specific_timeline: 8, asking_about_pricing: 5, ready_to_start_immediately: 15,
+    no_budget_context: -5, just_browsing: -10
+  },
+  thresholds: { hot: 25, warm: 10 },
+  signals: {
+    hot_signals: ['mentions specific budget', 'deadline within 90 days', 'ready to start'],
+    warm_signals: ['engaged and asking questions', 'exploring options', 'comparing vendors'],
+    cold_signals: ['no budget context', 'no timeline given', 'vague need']
+  }
+};
 
 async function qualifyLead(conversationMessages) {
+  const active = await getActiveIntelligenceVersion();
+  let rules = FALLBACK_RULES;
+  if (active) {
+    try { rules = JSON.parse(active.scoring_rules); } catch { /* fall through to defaults */ }
+  }
+  const qualifierPrompt = buildQualifierPrompt(rules);
+
   const conversation = conversationMessages
     .filter(m => m.role !== 'system')
     .map(m => `${m.role.toUpperCase()}: ${m.content}`)
     .join('\n\n');
 
   const messages = [
-    { role: 'system', content: QUALIFIER_PROMPT },
+    { role: 'system', content: qualifierPrompt },
     { role: 'user', content: `Conversation:\n\n${conversation}` }
   ];
 
@@ -36,7 +40,6 @@ async function qualifyLead(conversationMessages) {
 
   const result = JSON.parse(jsonMatch[0]);
 
-  // Validate required fields and score value
   const validScores = ['hot', 'warm', 'cold'];
   if (!result.summary || !result.bottlenecks || !result.followup) {
     throw new Error('Qualifier response missing required fields');
@@ -45,7 +48,13 @@ async function qualifyLead(conversationMessages) {
     throw new Error(`Qualifier returned invalid score: ${result.score}`);
   }
 
-  return result;
+  return {
+    summary: result.summary,
+    bottlenecks: result.bottlenecks,
+    score: result.score,
+    followup: result.followup,
+    signals_observed: Array.isArray(result.signals_observed) ? result.signals_observed : []
+  };
 }
 
 module.exports = { qualifyLead };

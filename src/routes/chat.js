@@ -5,12 +5,19 @@ const fs = require('fs');
 const { getClient } = require('../db/client');
 const ai = require('../services/ai');
 
+const { getActiveIntelligenceVersion, buildSystemPrompt } = require('../services/intelligence');
+
 const router = express.Router();
 
-const SYSTEM_PROMPT = fs.readFileSync(
+const CORE_PROMPT = fs.readFileSync(
   path.join(__dirname, '..', 'services', 'aria-core-prompt.md'),
   'utf8'
 );
+
+async function resolveSystemPrompt() {
+  const active = await getActiveIntelligenceVersion();
+  return buildSystemPrompt(CORE_PROMPT, active);
+}
 
 router.post('/', async (req, res) => {
   const { sessionId, message } = req.body;
@@ -28,7 +35,8 @@ router.post('/', async (req, res) => {
     if (!sid) {
       // New session
       sid = randomUUID();
-      messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+      const systemPrompt = await resolveSystemPrompt();
+      messages = [{ role: 'system', content: systemPrompt }];
       await client.execute({
         sql: 'INSERT INTO chat_sessions (id, lead_id, messages, created_at, updated_at) VALUES (?, NULL, ?, ?, ?)',
         args: [sid, JSON.stringify(messages), now, now]
