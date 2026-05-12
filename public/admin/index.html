@@ -995,6 +995,7 @@
       <button id="nav-followups" class="nav-btn" onclick="showTab('followups')">Follow-ups</button>
       <button id="nav-export" class="nav-btn" onclick="showTab('export')">Export</button>
       <button id="nav-settings" class="nav-btn" onclick="showTab('settings')">Settings</button>
+      <button id="nav-scraper" class="nav-btn" onclick="showTab('scraper')">Scraper</button>
     </nav>
 
     <!-- Main content -->
@@ -1156,6 +1157,124 @@
         </section>
       </div>
 
+      <!-- Scraper tab -->
+      <div id="tab-scraper" class="tab-content">
+        <h1 class="section-title">Scraper</h1>
+
+        <!-- Config panel -->
+        <section class="settings-card collapsible" data-collapsed="false" style="margin-bottom:16px;">
+          <h2 class="settings-card-title collapsible-title">Scraper Configuration <span class="collapse-caret">▾</span></h2>
+          <div class="collapsible-body">
+            <p class="settings-card-desc">Google Places API key, categories, cities, and limits for the scraper.</p>
+
+            <div class="settings-field">
+              <label class="settings-label" for="scraper-api-key">Google Places API Key</label>
+              <div class="settings-add-row">
+                <input type="password" id="scraper-api-key" class="settings-input" placeholder="Enter Google Places API key" autocomplete="off">
+                <button id="scraper-save-config" class="btn-add-status">Save Config</button>
+              </div>
+            </div>
+
+            <div class="settings-field">
+              <label class="settings-label" for="scraper-max-run">Max leads per run</label>
+              <input type="number" id="scraper-max-run" class="settings-input" min="1" style="max-width:120px;">
+            </div>
+            <div class="settings-field">
+              <label class="settings-label" for="scraper-max-cat">Max per category</label>
+              <input type="number" id="scraper-max-cat" class="settings-input" min="1" style="max-width:120px;">
+            </div>
+            <div class="settings-field">
+              <div class="settings-toggle-row">
+                <label class="settings-toggle-label">
+                  <input type="checkbox" id="scraper-prefer-mobile"> <span>Prefer mobile numbers (Indonesia)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-field">
+              <label class="settings-label">Categories</label>
+              <div id="scraper-categories" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+              <div class="settings-add-row">
+                <input type="text" id="scraper-add-category" class="settings-input" placeholder="Add category">
+                <button type="button" id="scraper-add-category-btn" class="btn-add-status">Add</button>
+              </div>
+            </div>
+
+            <div class="settings-field">
+              <label class="settings-label">Cities (by country)</label>
+              <div id="scraper-cities" style="margin-bottom:8px;"></div>
+              <div class="settings-add-row">
+                <input type="text" id="scraper-add-country" class="settings-input" placeholder="Add country (e.g., Malaysia)">
+                <button type="button" id="scraper-add-country-btn" class="btn-add-status">Add Country</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Run panel -->
+        <section class="settings-card collapsible" data-collapsed="false" id="scraper-run-card" style="margin-bottom:16px;">
+          <h2 class="settings-card-title collapsible-title">Run Scraper <span class="collapse-caret">▾</span></h2>
+          <div class="collapsible-body">
+            <p class="settings-card-desc">Run the scraper chunk-by-chunk across all category × city combinations.</p>
+            <div style="display:flex;gap:10px;margin-bottom:12px;">
+              <button type="button" id="scraper-run-btn" class="btn-add-status">Run Scraper</button>
+              <button type="button" id="scraper-stop-btn" class="btn-danger" style="display:none;">Stop</button>
+            </div>
+            <pre id="scraper-progress" style="background:var(--bg);border:1px solid var(--card-border);border-radius:8px;padding:12px;font-size:12px;font-family:var(--mono);color:var(--text-secondary);min-height:60px;max-height:240px;overflow-y:auto;white-space:pre-wrap;"></pre>
+          </div>
+        </section>
+
+        <!-- Scraped leads table -->
+        <section class="settings-card" id="scraper-leads-card">
+          <h2 class="settings-card-title" style="margin-bottom:12px;">Scraped Leads</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <select id="scraper-filter-status" class="status-select" style="font-size:12px;padding:6px 10px;">
+              <option value="">All statuses</option>
+            </select>
+            <select id="scraper-filter-category" class="status-select" style="font-size:12px;padding:6px 10px;">
+              <option value="">All categories</option>
+            </select>
+            <select id="scraper-filter-country" class="status-select" style="font-size:12px;padding:6px 10px;">
+              <option value="">All countries</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto;">
+            <table id="scraper-leads-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="background:rgba(0,255,200,0.03);border-bottom:1px solid var(--card-border);">
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">Business</th>
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">Category</th>
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">City</th>
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">Country</th>
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">Phone</th>
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">Website</th>
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">Rating</th>
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">Status</th>
+                  <th style="padding:10px 8px;text-align:left;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;font-size:11px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="scraper-leads-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Transfer modal -->
+        <div id="scraper-transfer-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;" class="modal-overlay" hidden>
+          <div class="modal-box" style="max-width:480px;">
+            <h2>Transfer to Leads</h2>
+            <dl id="scraper-transfer-summary" style="margin-bottom:12px;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;"></dl>
+            <label>Email (optional)</label>
+            <input type="email" id="scraper-transfer-email" placeholder="Add email if known">
+            <label>Notes</label>
+            <textarea id="scraper-transfer-notes" rows="4"></textarea>
+            <div class="modal-btns">
+              <button class="btn-cancel" id="scraper-transfer-close">Cancel</button>
+              <button class="btn-save" id="scraper-transfer-confirm">Confirm Transfer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Mission Control Feed -->
       <div class="feed-section">
         <div class="feed-title">// Mission Control Feed</div>
@@ -1213,6 +1332,10 @@
       <button id="mob-settings" class="mob-btn" onclick="showTab('settings')" aria-label="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         <span>Settings</span>
+      </button>
+      <button id="mob-scraper" class="mob-btn" onclick="showTab('scraper')" aria-label="Scraper">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <span>Scraper</span>
       </button>
     </div>
   </div>
@@ -2715,7 +2838,7 @@
       pollTimer = setInterval(pollNewLeads, POLL_INTERVAL_MS);
     }
 
-    // Clear badge when user opens the Leads tab
+    // Clear badge when user opens the Leads tab; init Scraper tab on first visit
     var origShowTab = window.showTab;
     window.showTab = function (name) {
       if (name === 'leads') {
@@ -2725,8 +2848,22 @@
         previouslyKnownIds = {};
         pollFirstRun = true;
       }
+      if (name === 'scraper') {
+        initScraperTab();
+      }
       origShowTab(name);
     };
+
+    /* =========================================
+       SCRAPER TAB — stub (Tasks 10–12 fill in)
+       ========================================= */
+    var scraperInited = false;
+    async function initScraperTab() {
+      if (scraperInited) return;
+      scraperInited = true;
+      await loadScraperConfig();
+      await loadScrapedLeads();
+    }
 
     /* =========================================
        NOTES LOG (per-lead)
