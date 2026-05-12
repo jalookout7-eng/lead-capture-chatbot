@@ -1,4 +1,4 @@
-const CACHE = 'lead-admin-v6';
+const CACHE = 'lead-admin-v7';
 const SHELL = ['/admin/', '/admin/index.html'];
 
 self.addEventListener('install', e => {
