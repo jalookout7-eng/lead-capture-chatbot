@@ -237,3 +237,97 @@ describe('POST /api/scraper/run-chunk', () => {
     expect(res.body.leads[0].name).toBe('Mobile');
   });
 });
+
+describe('GET /api/scraper/leads', () => {
+  test('returns 401 without auth', async () => {
+    const res = await request(app).get('/api/scraper/leads');
+    expect(res.status).toBe(401);
+  });
+
+  test('returns non-transferred leads ordered by scraped_at DESC', async () => {
+    const rows = [
+      { id: 'a', name: 'Newer', transferred: 0, scraped_at: '2026-05-12T10:00:00Z' },
+      { id: 'b', name: 'Older', transferred: 0, scraped_at: '2026-05-11T10:00:00Z' }
+    ];
+    let capturedSql = null;
+    mockExecute.mockImplementation(({ sql }) => {
+      capturedSql = sql;
+      return { rows };
+    });
+    const res = await request(app).get('/api/scraper/leads').set(authHeader);
+    expect(res.status).toBe(200);
+    expect(res.body.leads).toEqual(rows);
+    expect(capturedSql).toMatch(/transferred\s*=\s*0/i);
+    expect(capturedSql).toMatch(/ORDER BY scraped_at DESC/i);
+  });
+
+  test('applies status filter from query string', async () => {
+    let capturedArgs = null;
+    mockExecute.mockImplementation(({ args }) => {
+      capturedArgs = args;
+      return { rows: [] };
+    });
+    await request(app).get('/api/scraper/leads?status=Called%20%E2%80%93%20Spoke').set(authHeader);
+    expect(capturedArgs).toContain('Called – Spoke');
+  });
+
+  test('applies category and country filters', async () => {
+    let capturedSql = null;
+    let capturedArgs = null;
+    mockExecute.mockImplementation(({ sql, args }) => {
+      capturedSql = sql;
+      capturedArgs = args;
+      return { rows: [] };
+    });
+    await request(app).get('/api/scraper/leads?category=salon&country=Indonesia').set(authHeader);
+    expect(capturedSql).toMatch(/category\s*=\s*\?/i);
+    expect(capturedSql).toMatch(/country\s*=\s*\?/i);
+    expect(capturedArgs).toEqual(expect.arrayContaining(['salon', 'Indonesia']));
+  });
+});
+
+describe('PATCH /api/scraper/leads/:id/status', () => {
+  test('returns 401 without auth', async () => {
+    const res = await request(app).patch('/api/scraper/leads/abc/status').send({ status: 'Interested' });
+    expect(res.status).toBe(401);
+  });
+
+  test('returns 400 for invalid status value', async () => {
+    const res = await request(app)
+      .patch('/api/scraper/leads/abc/status')
+      .set(authHeader)
+      .send({ status: 'Bogus' });
+    expect(res.status).toBe(400);
+  });
+
+  test('returns 404 when row not found', async () => {
+    mockExecute.mockResolvedValueOnce({ rowsAffected: 0 });
+    const res = await request(app)
+      .patch('/api/scraper/leads/missing/status')
+      .set(authHeader)
+      .send({ status: 'Interested' });
+    expect(res.status).toBe(404);
+  });
+
+  test('returns 200 on valid update', async () => {
+    mockExecute.mockResolvedValueOnce({ rowsAffected: 1 });
+    const res = await request(app)
+      .patch('/api/scraper/leads/abc/status')
+      .set(authHeader)
+      .send({ status: 'Interested' });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  test('accepts all five valid status values', async () => {
+    const valid = ['New', 'Called – No Answer', 'Called – Spoke', 'Interested', 'Not Interested'];
+    for (const s of valid) {
+      mockExecute.mockResolvedValueOnce({ rowsAffected: 1 });
+      const res = await request(app)
+        .patch('/api/scraper/leads/abc/status')
+        .set(authHeader)
+        .send({ status: s });
+      expect(res.status).toBe(200);
+    }
+  });
+});

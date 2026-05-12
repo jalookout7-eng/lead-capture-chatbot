@@ -141,4 +141,40 @@ router.post('/scraper/run-chunk', requireAuth, async (req, res) => {
   }
 });
 
+const VALID_SCRAPED_STATUSES = ['New', 'Called – No Answer', 'Called – Spoke', 'Interested', 'Not Interested'];
+
+router.get('/scraper/leads', requireAuth, async (req, res) => {
+  try {
+    const where = ['transferred = 0'];
+    const args = [];
+    if (req.query.status)   { where.push('status = ?');   args.push(req.query.status); }
+    if (req.query.category) { where.push('category = ?'); args.push(req.query.category); }
+    if (req.query.country)  { where.push('country = ?');  args.push(req.query.country); }
+    const sql = `SELECT * FROM scraped_leads WHERE ${where.join(' AND ')} ORDER BY scraped_at DESC`;
+    const result = await getClient().execute({ sql, args });
+    res.json({ leads: result.rows });
+  } catch (err) {
+    console.error('Scraper leads GET error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.patch('/scraper/leads/:id/status', requireAuth, async (req, res) => {
+  const { status } = req.body || {};
+  if (!VALID_SCRAPED_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${VALID_SCRAPED_STATUSES.join(', ')}` });
+  }
+  try {
+    const result = await getClient().execute({
+      sql: 'UPDATE scraped_leads SET status = ? WHERE id = ?',
+      args: [status, req.params.id]
+    });
+    if (result.rowsAffected === 0) return res.status(404).json({ error: 'Scraped lead not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Scraper leads status PATCH error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
