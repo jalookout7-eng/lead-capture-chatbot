@@ -53,6 +53,25 @@ describe('isMobileNumber (Indonesia)', () => {
   });
 });
 
+describe('isMobileNumber (other countries)', () => {
+  test('keeps any number when country is not Indonesia (filter is ID-only)', () => {
+    // UAE landline + mobile both kept so non-Indonesia runs are not silently emptied
+    expect(isMobileNumber('+97142223333', 'United Arab Emirates')).toBe(true);
+    expect(isMobileNumber('+971501234567', 'United Arab Emirates')).toBe(true);
+    expect(isMobileNumber('+12025550100', 'United States')).toBe(true);
+  });
+
+  test('still keeps phoneless leads regardless of country', () => {
+    expect(isMobileNumber('', 'United Arab Emirates')).toBe(true);
+    expect(isMobileNumber(null, 'Nigeria')).toBe(true);
+  });
+
+  test('still applies the strict filter when country is Indonesia', () => {
+    expect(isMobileNumber('02112345678', 'Indonesia')).toBe(false);
+    expect(isMobileNumber('08123456789', 'Indonesia')).toBe(true);
+  });
+});
+
 describe('searchBusinesses', () => {
   beforeEach(() => {
     jest.useFakeTimers({ doNotFake: ['nextTick'] });

@@ -10,8 +10,13 @@ const PLACE_FIELDS = [
 
 const client = new Client({});
 
-function isMobileNumber(phone) {
+// The "prefer mobile" filter was tuned for Indonesian carrier prefixes. Applying that
+// strict regex to other countries would reject every number (all read as landlines),
+// silently yielding zero leads. So the strict check only runs for Indonesia; for any
+// other country we keep the lead (return true) rather than drop it.
+function isMobileNumber(phone, country) {
   if (!phone) return true;
+  if (country && country !== 'Indonesia') return true;
   const cleaned = String(phone).replace(/[\s\-]/g, '');
   return MOBILE_REGEX.test(cleaned);
 }
