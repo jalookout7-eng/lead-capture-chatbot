@@ -1013,6 +1013,82 @@
       font-size: 13px; line-height: 1; padding: 0;
     }
     #scraper-leads-table td { color: var(--text-primary); }
+
+    /* ===== Scraper redesign (exec-dashboard layout) ===== */
+    .scraper-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 20px;
+    }
+    .scraper-stat {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      transition: box-shadow 0.2s;
+    }
+    .scraper-stat:hover { box-shadow: 0 0 15px rgba(0,255,200,0.1); }
+    .scraper-stat .num { font-family: var(--mono); font-size: 26px; font-weight: 700; line-height: 1; }
+    .scraper-stat .lbl { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 8px; }
+    .scraper-stat.s-total .num { color: var(--accent); }
+    .scraper-stat.s-new   .num { color: #5b9cff; }
+    .scraper-stat.s-int   .num { color: var(--warm); }
+    .scraper-stat.s-trans .num { color: #36d399; }
+
+    /* Two-column working area: config/targeting left, run/log right */
+    .scraper-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px; align-items: start;
+      margin-bottom: 20px;
+    }
+    .scraper-grid .settings-card { margin-bottom: 0; }
+    .scraper-col { display: flex; flex-direction: column; gap: 18px; }
+
+    /* Bigger, clearer config controls */
+    #tab-scraper .settings-label { font-size: 13px; color: var(--text-primary); font-weight: 600; margin-bottom: 6px; }
+    #tab-scraper .settings-card-desc { font-size: 12.5px; line-height: 1.5; }
+    .scraper-field-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .scraper-field-row .settings-field { flex: 1; min-width: 130px; }
+
+    .scraper-targeting-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 1100px) { .scraper-targeting-cols { grid-template-columns: 1fr; } }
+
+    .scraper-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; background: rgba(0,255,200,0.08);
+      border: 1px solid var(--card-border); border-radius: 8px;
+      font-size: 12.5px; color: var(--text-primary);
+    }
+    .scraper-chip button { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+    .scraper-chip button:hover { color: var(--hot); }
+
+    .scraper-country-group { margin-bottom: 10px; border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; }
+    .scraper-country-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(0,255,200,0.05); }
+    .scraper-country-head .name { color: var(--accent); font-family: var(--mono); font-size: 13.5px; font-weight: 700; }
+    .scraper-country-head .rm { background: none; border: 1px solid var(--hot); color: var(--hot); border-radius: 6px; padding: 3px 9px; cursor: pointer; font-size: 11px; }
+    .scraper-country-body { padding: 10px 12px; }
+
+    /* Big primary run button */
+    .scraper-run-btn-lg {
+      width: 100%; padding: 14px; font-size: 15px; font-weight: 700;
+      background: var(--accent); color: #04211b; border: none; border-radius: 10px;
+      cursor: pointer; font-family: var(--mono); letter-spacing: 0.5px;
+      transition: filter 0.15s;
+    }
+    .scraper-run-btn-lg:hover { filter: brightness(1.08); }
+    .scraper-run-btn-lg:disabled { opacity: 0.5; cursor: default; }
+
+    .scraper-save-pill {
+      font-size: 11px; color: var(--text-secondary); margin-left: 8px;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .scraper-save-pill.show { opacity: 1; color: #36d399; }
+
+    @media (max-width: 980px) {
+      .scraper-grid { grid-template-columns: 1fr; }
+      .scraper-stats { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -1204,68 +1280,91 @@
       <div id="tab-scraper" class="tab-content">
         <h1 class="section-title">Scraper</h1>
 
-        <!-- Config panel -->
-        <section class="settings-card collapsible" data-collapsed="false" style="margin-bottom:16px;">
-          <h2 class="settings-card-title collapsible-title">Scraper Configuration <span class="collapse-caret">▾</span></h2>
-          <div class="collapsible-body">
-            <p class="settings-card-desc">Google Places API key, categories, cities, and limits for the scraper.</p>
+        <!-- Stat cards -->
+        <div class="scraper-stats">
+          <div class="scraper-stat s-total"><div class="num" id="scraper-stat-total">0</div><div class="lbl">Scraped (untransferred)</div></div>
+          <div class="scraper-stat s-new"><div class="num" id="scraper-stat-new">0</div><div class="lbl">New</div></div>
+          <div class="scraper-stat s-int"><div class="num" id="scraper-stat-interested">0</div><div class="lbl">Interested</div></div>
+          <div class="scraper-stat s-trans"><div class="num" id="scraper-stat-countries">0</div><div class="lbl">Countries targeted</div></div>
+        </div>
 
-            <div class="settings-field">
-              <label class="settings-label" for="scraper-api-key">Google Places API Key</label>
-              <div class="settings-add-row">
-                <input type="password" id="scraper-api-key" class="settings-input" placeholder="Enter Google Places API key" autocomplete="off">
-                <button id="scraper-save-config" class="btn-add-status">Save Config</button>
-              </div>
-            </div>
+        <!-- Two-column work area -->
+        <div class="scraper-grid">
+          <!-- LEFT: configuration + targeting -->
+          <div class="scraper-col">
+            <section class="settings-card">
+              <h2 class="settings-card-title" style="margin-bottom:14px;">Configuration <span class="scraper-save-pill" id="scraper-save-pill">Saved ✓</span></h2>
 
-            <div class="settings-field">
-              <label class="settings-label" for="scraper-max-run">Max leads per run</label>
-              <input type="number" id="scraper-max-run" class="settings-input" min="1" style="max-width:120px;">
-            </div>
-            <div class="settings-field">
-              <label class="settings-label" for="scraper-max-cat">Max per category</label>
-              <input type="number" id="scraper-max-cat" class="settings-input" min="1" style="max-width:120px;">
-            </div>
-            <div class="settings-field">
-              <div class="settings-toggle-row">
-                <label class="settings-toggle-label">
-                  <input type="checkbox" id="scraper-prefer-mobile"> <span>Prefer mobile numbers (Indonesia)</span>
-                </label>
+              <div class="settings-field">
+                <label class="settings-label" for="scraper-api-key">Google Places API Key</label>
+                <div class="settings-add-row">
+                  <input type="password" id="scraper-api-key" class="settings-input" placeholder="Enter Google Places API key" autocomplete="off">
+                  <button id="scraper-save-config" class="btn-add-status">Save Key</button>
+                </div>
               </div>
-            </div>
 
-            <div class="settings-field">
-              <label class="settings-label">Categories</label>
-              <div id="scraper-categories" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
-              <div class="settings-add-row">
-                <input type="text" id="scraper-add-category" class="settings-input" placeholder="Add category">
-                <button type="button" id="scraper-add-category-btn" class="btn-add-status">Add</button>
+              <div class="scraper-field-row" style="margin-top:4px;">
+                <div class="settings-field">
+                  <label class="settings-label" for="scraper-max-run">Max leads per run</label>
+                  <input type="number" id="scraper-max-run" class="settings-input" min="1">
+                </div>
+                <div class="settings-field">
+                  <label class="settings-label" for="scraper-max-cat">Max per category</label>
+                  <input type="number" id="scraper-max-cat" class="settings-input" min="1">
+                </div>
               </div>
-            </div>
 
-            <div class="settings-field">
-              <label class="settings-label">Cities (by country)</label>
-              <div id="scraper-cities" style="margin-bottom:8px;"></div>
-              <div class="settings-add-row">
-                <input type="text" id="scraper-add-country" class="settings-input" placeholder="Add country (e.g., Malaysia)">
-                <button type="button" id="scraper-add-country-btn" class="btn-add-status">Add Country</button>
+              <div class="settings-field" style="margin-top:8px;">
+                <div class="settings-toggle-row">
+                  <label class="settings-toggle-label">
+                    <input type="checkbox" id="scraper-prefer-mobile"> <span>Prefer mobile numbers</span>
+                  </label>
+                </div>
               </div>
-            </div>
+            </section>
+
+            <section class="settings-card">
+              <h2 class="settings-card-title" style="margin-bottom:6px;">Targeting</h2>
+              <p class="settings-card-desc" style="margin-bottom:14px;">Choose countries, cities, and business categories. Changes save automatically.</p>
+
+              <div class="scraper-targeting-cols">
+                <div class="settings-field">
+                  <label class="settings-label">Categories</label>
+                  <div id="scraper-categories" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+                  <div class="settings-add-row">
+                    <input type="text" id="scraper-add-category" class="settings-input" placeholder="Add category" list="scraper-category-suggestions">
+                    <button type="button" id="scraper-add-category-btn" class="btn-add-status">Add</button>
+                  </div>
+                  <datalist id="scraper-category-suggestions"></datalist>
+                </div>
+
+                <div class="settings-field">
+                  <label class="settings-label" for="scraper-country-select">Add a country</label>
+                  <div class="settings-add-row">
+                    <select id="scraper-country-select" class="settings-input"></select>
+                    <button type="button" id="scraper-add-country-btn" class="btn-add-status">Add</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-field" style="margin-top:14px;">
+                <label class="settings-label">Selected countries &amp; cities</label>
+                <div id="scraper-cities"></div>
+              </div>
+            </section>
           </div>
-        </section>
 
-        <!-- Run panel -->
-        <section class="settings-card collapsible" data-collapsed="false" id="scraper-run-card" style="margin-bottom:16px;">
-          <h2 class="settings-card-title collapsible-title">Run Scraper <span class="collapse-caret">▾</span></h2>
-          <div class="collapsible-body">
-            <p class="settings-card-desc">Run the scraper chunk-by-chunk across all category × city combinations.</p>
-            <div style="display:flex;gap:10px;margin-bottom:12px;">
-              <button type="button" id="scraper-run-btn" class="btn-add-status">Run Scraper</button>
-              <button type="button" id="scraper-stop-btn" class="btn-danger" style="display:none;">Stop</button>
-            </div>
-            <pre id="scraper-progress" style="background:var(--bg);border:1px solid var(--card-border);border-radius:8px;padding:12px;font-size:12px;font-family:var(--mono);color:var(--text-secondary);min-height:60px;max-height:240px;overflow-y:auto;white-space:pre-wrap;"></pre>
+          <!-- RIGHT: run + live log -->
+          <div class="scraper-col">
+            <section class="settings-card" id="scraper-run-card">
+              <h2 class="settings-card-title" style="margin-bottom:6px;">Run Scraper</h2>
+              <p class="settings-card-desc" id="scraper-run-summary" style="margin-bottom:14px;">Searches every category in every selected city, stopping at your max-leads limit.</p>
+              <button type="button" id="scraper-run-btn" class="scraper-run-btn-lg">▶ Run Scraper</button>
+              <button type="button" id="scraper-stop-btn" class="btn-danger" style="display:none;width:100%;margin-top:10px;">Stop</button>
+              <pre id="scraper-progress" style="margin-top:14px;background:var(--bg);border:1px solid var(--card-border);border-radius:8px;padding:12px;font-size:12px;font-family:var(--mono);color:var(--text-secondary);min-height:180px;max-height:360px;overflow-y:auto;white-space:pre-wrap;"></pre>
+            </section>
           </div>
-        </section>
+        </div>
 
         <!-- Scraped leads table -->
         <section class="settings-card" id="scraper-leads-card">
@@ -3393,6 +3492,148 @@
        ========================================= */
     var scraperConfigCache = null;
 
+    /* Country list grouped by region (for the Add-country dropdown). */
+    var SCRAPER_COUNTRY_GROUPS = [
+      { region: 'Gulf & Middle East', countries: ['United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Kuwait', 'Bahrain', 'Oman', 'Jordan', 'Lebanon', 'Iraq', 'Israel', 'Turkey', 'Yemen'] },
+      { region: 'Asia', countries: ['Indonesia', 'Malaysia', 'Singapore', 'Thailand', 'Vietnam', 'Philippines', 'India', 'Pakistan', 'Bangladesh', 'Sri Lanka', 'China', 'Hong Kong', 'Taiwan', 'Japan', 'South Korea', 'Cambodia', 'Myanmar', 'Nepal', 'Brunei', 'Laos'] },
+      { region: 'Africa', countries: ['Nigeria', 'Egypt', 'South Africa', 'Kenya', 'Morocco', 'Ghana', 'Tanzania', 'Uganda', 'Ethiopia', 'Algeria', 'Tunisia', 'Senegal', 'Ivory Coast', 'Cameroon', 'Rwanda', 'Zambia', 'Zimbabwe', 'Angola', 'Libya', 'Sudan'] },
+      { region: 'Europe', countries: ['United Kingdom', 'Ireland', 'France', 'Germany', 'Spain', 'Italy', 'Netherlands', 'Belgium', 'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 'Portugal', 'Greece', 'Austria', 'Czechia', 'Romania', 'Hungary'] },
+      { region: 'Americas', countries: ['United States', 'Canada', 'Mexico', 'Brazil', 'Argentina', 'Colombia', 'Chile', 'Peru', 'Ecuador', 'Panama'] },
+      { region: 'Oceania', countries: ['Australia', 'New Zealand', 'Fiji'] }
+    ];
+
+    /* Curated major cities / districts per country. Free-text is always allowed. */
+    var SCRAPER_CITY_SUGGESTIONS = {
+      'United Arab Emirates': ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Al Ain', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain', 'Downtown Dubai', 'DIFC', 'Business Bay', 'Dubai Marina', 'Deira', 'Jumeirah', 'Al Barsha'],
+      'Saudi Arabia': ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Dhahran', 'Tabuk', 'Abha', 'Buraidah'],
+      'Qatar': ['Doha', 'Al Rayyan', 'Al Wakrah', 'Lusail', 'Al Khor'],
+      'Kuwait': ['Kuwait City', 'Hawalli', 'Salmiya', 'Al Ahmadi', 'Jahra'],
+      'Bahrain': ['Manama', 'Riffa', 'Muharraq', 'Hamad Town', 'Isa Town'],
+      'Oman': ['Muscat', 'Salalah', 'Sohar', 'Nizwa', 'Sur'],
+      'Jordan': ['Amman', 'Zarqa', 'Irbid', 'Aqaba'],
+      'Lebanon': ['Beirut', 'Tripoli', 'Sidon', 'Jounieh'],
+      'Iraq': ['Baghdad', 'Basra', 'Erbil', 'Mosul', 'Najaf'],
+      'Israel': ['Tel Aviv', 'Jerusalem', 'Haifa', 'Netanya'],
+      'Turkey': ['Istanbul', 'Ankara', 'Izmir', 'Antalya', 'Bursa'],
+      'Indonesia': ['Jakarta', 'Surabaya', 'Bandung', 'Medan', 'Semarang', 'Makassar', 'Bali', 'Yogyakarta', 'Tangerang', 'Bekasi'],
+      'Malaysia': ['Kuala Lumpur', 'George Town', 'Johor Bahru', 'Ipoh', 'Shah Alam', 'Petaling Jaya', 'Kuching', 'Kota Kinabalu'],
+      'Singapore': ['Singapore', 'Orchard', 'Jurong', 'Tampines', 'Woodlands'],
+      'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Nonthaburi'],
+      'Vietnam': ['Ho Chi Minh City', 'Hanoi', 'Da Nang', 'Hai Phong', 'Can Tho'],
+      'Philippines': ['Manila', 'Quezon City', 'Cebu City', 'Davao City', 'Makati'],
+      'India': ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad', 'Gurgaon', 'Noida'],
+      'Pakistan': ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad'],
+      'Bangladesh': ['Dhaka', 'Chittagong', 'Khulna', 'Sylhet'],
+      'Sri Lanka': ['Colombo', 'Kandy', 'Galle', 'Negombo'],
+      'China': ['Shanghai', 'Beijing', 'Shenzhen', 'Guangzhou', 'Chengdu', 'Hangzhou'],
+      'Hong Kong': ['Hong Kong', 'Kowloon', 'Causeway Bay', 'Central'],
+      'Taiwan': ['Taipei', 'Kaohsiung', 'Taichung', 'Tainan'],
+      'Japan': ['Tokyo', 'Osaka', 'Yokohama', 'Nagoya', 'Fukuoka', 'Kyoto'],
+      'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu'],
+      'Cambodia': ['Phnom Penh', 'Siem Reap', 'Sihanoukville'],
+      'Myanmar': ['Yangon', 'Mandalay', 'Naypyidaw'],
+      'Nepal': ['Kathmandu', 'Pokhara', 'Lalitpur'],
+      'Brunei': ['Bandar Seri Begawan'],
+      'Laos': ['Vientiane', 'Luang Prabang'],
+      'Nigeria': ['Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan'],
+      'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Sharm El Sheikh'],
+      'South Africa': ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth'],
+      'Kenya': ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru'],
+      'Morocco': ['Casablanca', 'Rabat', 'Marrakesh', 'Tangier', 'Fez'],
+      'Ghana': ['Accra', 'Kumasi', 'Tamale'],
+      'Tanzania': ['Dar es Salaam', 'Dodoma', 'Arusha', 'Zanzibar'],
+      'Uganda': ['Kampala', 'Entebbe', 'Jinja'],
+      'Ethiopia': ['Addis Ababa', 'Dire Dawa'],
+      'Algeria': ['Algiers', 'Oran', 'Constantine'],
+      'Tunisia': ['Tunis', 'Sfax', 'Sousse'],
+      'Senegal': ['Dakar', 'Touba'],
+      'Ivory Coast': ['Abidjan', 'Yamoussoukro'],
+      'Cameroon': ['Douala', 'Yaoundé'],
+      'Rwanda': ['Kigali'],
+      'Zambia': ['Lusaka', 'Kitwe'],
+      'Zimbabwe': ['Harare', 'Bulawayo'],
+      'Angola': ['Luanda'],
+      'Libya': ['Tripoli', 'Benghazi'],
+      'Sudan': ['Khartoum', 'Omdurman'],
+      'United Kingdom': ['London', 'Manchester', 'Birmingham', 'Leeds', 'Glasgow', 'Liverpool', 'Edinburgh', 'Bristol'],
+      'Ireland': ['Dublin', 'Cork', 'Galway', 'Limerick'],
+      'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Bordeaux'],
+      'Germany': ['Berlin', 'Munich', 'Hamburg', 'Frankfurt', 'Cologne', 'Stuttgart'],
+      'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Malaga'],
+      'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Florence'],
+      'Netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht', 'Eindhoven'],
+      'Belgium': ['Brussels', 'Antwerp', 'Ghent', 'Bruges'],
+      'Switzerland': ['Zurich', 'Geneva', 'Basel', 'Bern', 'Lausanne'],
+      'Sweden': ['Stockholm', 'Gothenburg', 'Malmo'],
+      'Norway': ['Oslo', 'Bergen', 'Trondheim'],
+      'Denmark': ['Copenhagen', 'Aarhus', 'Odense'],
+      'Finland': ['Helsinki', 'Espoo', 'Tampere'],
+      'Poland': ['Warsaw', 'Krakow', 'Lodz', 'Wroclaw', 'Gdansk'],
+      'Portugal': ['Lisbon', 'Porto', 'Braga', 'Faro'],
+      'Greece': ['Athens', 'Thessaloniki', 'Patras'],
+      'Austria': ['Vienna', 'Graz', 'Salzburg', 'Linz'],
+      'Czechia': ['Prague', 'Brno', 'Ostrava'],
+      'Romania': ['Bucharest', 'Cluj-Napoca', 'Timisoara'],
+      'Hungary': ['Budapest', 'Debrecen', 'Szeged'],
+      'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Miami', 'Dallas', 'San Francisco', 'Seattle', 'Atlanta', 'Boston'],
+      'Canada': ['Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Ottawa', 'Edmonton'],
+      'Mexico': ['Mexico City', 'Guadalajara', 'Monterrey', 'Cancun'],
+      'Brazil': ['Sao Paulo', 'Rio de Janeiro', 'Brasilia', 'Salvador', 'Belo Horizonte'],
+      'Argentina': ['Buenos Aires', 'Cordoba', 'Rosario', 'Mendoza'],
+      'Colombia': ['Bogota', 'Medellin', 'Cali', 'Barranquilla'],
+      'Chile': ['Santiago', 'Valparaiso', 'Concepcion'],
+      'Peru': ['Lima', 'Arequipa', 'Trujillo'],
+      'Ecuador': ['Quito', 'Guayaquil'],
+      'Panama': ['Panama City'],
+      'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast'],
+      'New Zealand': ['Auckland', 'Wellington', 'Christchurch'],
+      'Fiji': ['Suva', 'Nadi']
+    };
+
+    var SCRAPER_CATEGORY_SUGGESTIONS = ['restaurant', 'cafe', 'salon', 'spa', 'dental clinic', 'medical clinic', 'gym', 'fitness centre', 'hotel', 'real estate agency', 'law firm', 'accounting firm', 'driving school', 'pet grooming', 'photography studio', 'event venue', 'auto repair', 'travel agency', 'beauty salon', 'barber shop', 'car dealership', 'interior designer', 'marketing agency', 'construction company'];
+
+    /* Auto-save: persist the current cache (categories/cities/limits) without reloading. */
+    var scraperSaveTimer = null;
+    function flashSavePill() {
+      var pill = document.getElementById('scraper-save-pill');
+      if (!pill) return;
+      pill.classList.add('show');
+      setTimeout(function () { pill.classList.remove('show'); }, 1500);
+    }
+    async function persistScraperConfig() {
+      if (!scraperConfigCache) return;
+      var payload = {
+        max_leads_per_run: document.getElementById('scraper-max-run').value || '15',
+        max_per_category: document.getElementById('scraper-max-cat').value || '3',
+        prefer_mobile: document.getElementById('scraper-prefer-mobile').checked ? 'true' : 'false',
+        categories: scraperConfigCache.categories || [],
+        cities: scraperConfigCache.cities || {}
+      };
+      // keep cache limit/flags in sync so Run uses the latest without a reload
+      scraperConfigCache.max_leads_per_run = payload.max_leads_per_run;
+      scraperConfigCache.max_per_category = payload.max_per_category;
+      scraperConfigCache.prefer_mobile = payload.prefer_mobile;
+      try {
+        var res = await fetch('/api/scraper/config', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify(payload) });
+        if (handleAuthError(res)) return;
+        if (res.ok) { flashSavePill(); updateScraperRunSummary(); }
+      } catch (err) { console.error('persistScraperConfig error:', err); }
+    }
+    function persistScraperConfigDebounced() {
+      if (scraperSaveTimer) clearTimeout(scraperSaveTimer);
+      scraperSaveTimer = setTimeout(persistScraperConfig, 500);
+    }
+
+    function updateScraperRunSummary() {
+      var el = document.getElementById('scraper-run-summary');
+      if (!el || !scraperConfigCache) return;
+      var chunks = buildScraperChunks(scraperConfigCache);
+      var countryEl = document.getElementById('scraper-stat-countries');
+      if (countryEl) countryEl.textContent = Object.keys(scraperConfigCache.cities || {}).length;
+      if (!chunks.length) { el.textContent = 'Add at least one country, city, and category to run.'; return; }
+      el.textContent = chunks.length + ' search' + (chunks.length === 1 ? '' : 'es') + ' queued (every category × city), stopping at your max-leads limit.';
+    }
+
     async function loadScraperConfig() {
       try {
         var res = await fetch('/api/scraper/config', { headers: authHeaders() });
@@ -3406,7 +3647,37 @@
       }
     }
 
+    var scraperDropdownsBuilt = false;
+    function buildScraperDropdowns() {
+      if (scraperDropdownsBuilt) return;
+      var sel = document.getElementById('scraper-country-select');
+      if (sel) {
+        sel.innerHTML = '';
+        SCRAPER_COUNTRY_GROUPS.forEach(function (grp) {
+          var og = document.createElement('optgroup');
+          og.label = grp.region;
+          grp.countries.slice().sort().forEach(function (country) {
+            var o = document.createElement('option');
+            o.value = country; o.textContent = country;
+            og.appendChild(o);
+          });
+          sel.appendChild(og);
+        });
+      }
+      var dl = document.getElementById('scraper-category-suggestions');
+      if (dl) {
+        dl.innerHTML = '';
+        SCRAPER_CATEGORY_SUGGESTIONS.forEach(function (cat) {
+          var o = document.createElement('option');
+          o.value = cat;
+          dl.appendChild(o);
+        });
+      }
+      scraperDropdownsBuilt = true;
+    }
+
     function renderScraperConfig(c) {
+      buildScraperDropdowns();
       var apiKeyEl = document.getElementById('scraper-api-key');
       if (apiKeyEl) {
         apiKeyEl.placeholder = c.api_key ? '●●●●● (set — leave blank to keep)' : 'Enter Google Places API key';
@@ -3420,19 +3691,28 @@
       if (prefMobEl) prefMobEl.checked = c.prefer_mobile === 'true' || c.prefer_mobile === true;
       renderScraperCategories(c.categories || []);
       renderScraperCities(c.cities || {});
+      updateScraperRunSummary();
     }
 
     function renderScraperCategories(categories) {
       var list = document.getElementById('scraper-categories');
       if (!list) return;
       list.innerHTML = '';
+      if (!categories.length) {
+        var empty = document.createElement('span');
+        empty.style.cssText = 'font-size:12px;color:var(--text-secondary);';
+        empty.textContent = 'No categories yet — add one below.';
+        list.appendChild(empty);
+        return;
+      }
       categories.forEach(function (cat) {
         var tag = document.createElement('span');
-        tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:rgba(0,255,200,0.08);border:1px solid var(--card-border);border-radius:6px;font-size:12px;color:var(--text-primary);';
-        tag.innerHTML = escapeHtml(cat) + ' <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:13px;line-height:1;padding:0;" aria-label="Remove ' + escapeHtml(cat) + '">\xd7</button>';
+        tag.className = 'scraper-chip';
+        tag.innerHTML = escapeHtml(cat) + ' <button type="button" aria-label="Remove ' + escapeHtml(cat) + '">\xd7</button>';
         tag.querySelector('button').addEventListener('click', function () {
           scraperConfigCache.categories = scraperConfigCache.categories.filter(function (c) { return c !== cat; });
           renderScraperCategories(scraperConfigCache.categories);
+          persistScraperConfig();
         });
         list.appendChild(tag);
       });
@@ -3442,42 +3722,69 @@
       var wrap = document.getElementById('scraper-cities');
       if (!wrap) return;
       wrap.innerHTML = '';
+      var keys = Object.keys(cities);
+      if (!keys.length) {
+        var empty = document.createElement('div');
+        empty.style.cssText = 'font-size:12px;color:var(--text-secondary);padding:6px 0;';
+        empty.textContent = 'No countries yet — pick one from the dropdown above and click Add.';
+        wrap.appendChild(empty);
+        updateScraperRunSummary();
+        return;
+      }
       Object.entries(cities).forEach(function ([country, cityList]) {
         var group = document.createElement('div');
-        group.style.cssText = 'margin-bottom:8px;border:1px solid var(--card-border);border-radius:8px;overflow:hidden;';
+        group.className = 'scraper-country-group';
 
         var header = document.createElement('div');
-        header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(0,255,200,0.04);cursor:pointer;';
+        header.className = 'scraper-country-head';
+        var titleSpan = document.createElement('span');
+        titleSpan.className = 'name';
+        titleSpan.textContent = country + ' (' + cityList.length + ')';
         var removeBtn = document.createElement('button');
         removeBtn.type = 'button';
-        removeBtn.innerHTML = '\xd7 Remove ' + escapeHtml(country);
-        removeBtn.style.cssText = 'background:none;border:1px solid var(--hot);color:var(--hot);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;';
-        removeBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
+        removeBtn.className = 'rm';
+        removeBtn.textContent = '\xd7 Remove';
+        removeBtn.addEventListener('click', function () {
           delete scraperConfigCache.cities[country];
           renderScraperCities(scraperConfigCache.cities);
+          persistScraperConfig();
         });
-        var titleSpan = document.createElement('span');
-        titleSpan.style.cssText = 'color:var(--accent);font-family:var(--mono);font-size:13px;font-weight:600;';
-        titleSpan.textContent = country;
         header.appendChild(titleSpan);
         header.appendChild(removeBtn);
         group.appendChild(header);
 
         var body = document.createElement('div');
-        body.style.cssText = 'padding:8px 12px;';
+        body.className = 'scraper-country-body';
 
         var tagsDiv = document.createElement('div');
-        tagsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
+        tagsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;';
+        if (!cityList.length) {
+          var noCity = document.createElement('span');
+          noCity.style.cssText = 'font-size:12px;color:var(--text-secondary);';
+          noCity.textContent = 'No cities yet — add or pick below.';
+          tagsDiv.appendChild(noCity);
+        }
         cityList.forEach(function (city) {
           var t = document.createElement('span');
-          t.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:rgba(0,255,200,0.08);border:1px solid var(--card-border);border-radius:6px;font-size:12px;color:var(--text-primary);';
-          t.innerHTML = escapeHtml(city) + ' <button type="button" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:13px;line-height:1;padding:0;" aria-label="Remove ' + escapeHtml(city) + '">\xd7</button>';
+          t.className = 'scraper-chip';
+          t.innerHTML = escapeHtml(city) + ' <button type="button" aria-label="Remove ' + escapeHtml(city) + '">\xd7</button>';
           t.querySelector('button').addEventListener('click', function () {
             scraperConfigCache.cities[country] = scraperConfigCache.cities[country].filter(function (c) { return c !== city; });
             renderScraperCities(scraperConfigCache.cities);
+            persistScraperConfig();
           });
           tagsDiv.appendChild(t);
+        });
+
+        // City input with country-scoped suggestions datalist
+        var dlId = 'scraper-cityopts-' + country.replace(/[^a-z0-9]/gi, '');
+        var dl = document.createElement('datalist');
+        dl.id = dlId;
+        (SCRAPER_CITY_SUGGESTIONS[country] || []).forEach(function (cityName) {
+          if (cityList.indexOf(cityName) !== -1) return;
+          var o = document.createElement('option');
+          o.value = cityName;
+          dl.appendChild(o);
         });
 
         var addRow = document.createElement('div');
@@ -3485,75 +3792,87 @@
         var cityInput = document.createElement('input');
         cityInput.type = 'text';
         cityInput.className = 'settings-input';
-        cityInput.placeholder = 'Add city';
+        cityInput.placeholder = 'Add city or district';
+        cityInput.setAttribute('list', dlId);
         var cityBtn = document.createElement('button');
         cityBtn.type = 'button';
         cityBtn.className = 'btn-add-status';
         cityBtn.textContent = 'Add';
-        cityBtn.addEventListener('click', function () {
+        function addCity() {
           var v = cityInput.value.trim();
           if (!v) return;
+          if ((scraperConfigCache.cities[country] || []).indexOf(v) !== -1) { cityInput.value = ''; return; }
           scraperConfigCache.cities[country] = (scraperConfigCache.cities[country] || []).concat([v]);
           renderScraperCities(scraperConfigCache.cities);
-        });
+          persistScraperConfig();
+        }
+        cityBtn.addEventListener('click', addCity);
+        cityInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addCity(); } });
         addRow.appendChild(cityInput);
         addRow.appendChild(cityBtn);
 
         body.appendChild(tagsDiv);
+        body.appendChild(dl);
         body.appendChild(addRow);
         group.appendChild(body);
         wrap.appendChild(group);
       });
+      updateScraperRunSummary();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
       var addCatBtn = document.getElementById('scraper-add-category-btn');
-      if (addCatBtn) addCatBtn.addEventListener('click', function () {
-        var input = document.getElementById('scraper-add-category');
-        var v = input.value.trim();
-        if (!v) return;
-        if (!scraperConfigCache) return;
+      var catInput = document.getElementById('scraper-add-category');
+      function addCategory() {
+        var v = catInput.value.trim();
+        if (!v || !scraperConfigCache) return;
+        if ((scraperConfigCache.categories || []).indexOf(v) !== -1) { catInput.value = ''; return; }
         scraperConfigCache.categories = (scraperConfigCache.categories || []).concat([v]);
-        input.value = '';
+        catInput.value = '';
         renderScraperCategories(scraperConfigCache.categories);
-      });
+        persistScraperConfig();
+      }
+      if (addCatBtn) addCatBtn.addEventListener('click', addCategory);
+      if (catInput) catInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addCategory(); } });
 
       var addCountryBtn = document.getElementById('scraper-add-country-btn');
       if (addCountryBtn) addCountryBtn.addEventListener('click', function () {
-        var input = document.getElementById('scraper-add-country');
-        var v = input.value.trim();
+        var sel = document.getElementById('scraper-country-select');
+        if (!sel || !scraperConfigCache) return;
+        var v = sel.value;
         if (!v) return;
-        if (!scraperConfigCache) return;
-        if (scraperConfigCache.cities[v]) { showSimpleToast('Country "' + v + '" already exists'); return; }
-        scraperConfigCache.cities[v] = [];
-        input.value = '';
+        if (scraperConfigCache.cities[v]) { showSimpleToast('"' + v + '" is already added'); return; }
+        // Pre-fill with the country's top suggested cities so it works out of the box
+        var seed = (SCRAPER_CITY_SUGGESTIONS[v] || []).slice(0, 3);
+        scraperConfigCache.cities[v] = seed;
         renderScraperCities(scraperConfigCache.cities);
+        persistScraperConfig();
+        showSimpleToast('Added ' + v + (seed.length ? ' with ' + seed.length + ' starter cities' : ''));
       });
 
-      var saveConfigBtn = document.getElementById('scraper-save-config');
-      if (saveConfigBtn) saveConfigBtn.addEventListener('click', async function () {
-        if (!scraperConfigCache) return;
+      // Auto-save limits + prefer-mobile on change
+      ['scraper-max-run', 'scraper-max-cat'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', persistScraperConfigDebounced);
+      });
+      var prefEl = document.getElementById('scraper-prefer-mobile');
+      if (prefEl) prefEl.addEventListener('change', persistScraperConfig);
+
+      // API key has its own explicit save (it is write-only / masked)
+      var saveKeyBtn = document.getElementById('scraper-save-config');
+      if (saveKeyBtn) saveKeyBtn.addEventListener('click', async function () {
         var apiKeyInput = document.getElementById('scraper-api-key').value.trim();
-        var payload = {
-          max_leads_per_run: document.getElementById('scraper-max-run').value,
-          max_per_category: document.getElementById('scraper-max-cat').value,
-          prefer_mobile: document.getElementById('scraper-prefer-mobile').checked ? 'true' : 'false',
-          categories: scraperConfigCache.categories,
-          cities: scraperConfigCache.cities
-        };
-        if (apiKeyInput) payload.api_key = apiKeyInput;
+        if (!apiKeyInput) { showSimpleToast('Enter a key first'); return; }
         try {
           var res = await fetch('/api/scraper/config', {
-            method: 'PATCH',
-            headers: authHeaders(),
-            body: JSON.stringify(payload)
+            method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ api_key: apiKeyInput })
           });
           if (handleAuthError(res)) return;
           if (!res.ok) { showSimpleToast('Save failed'); return; }
-          showSimpleToast('Scraper config saved');
+          showSimpleToast('API key saved');
           await loadScraperConfig();
         } catch (err) {
-          console.error('saveScraperConfig error:', err);
+          console.error('save API key error:', err);
           showSimpleToast('Save failed');
         }
       });
@@ -3576,18 +3895,13 @@
       var cities = config.cities || {};
       var categories = config.categories || [];
       var chunks = [];
+      // Interleave so an early stop still yields variety across cities (round-robin by category)
       Object.entries(cities).forEach(function ([country, cityList]) {
-        cityList.forEach(function (city) {
-          categories.forEach(function (cat) {
+        categories.forEach(function (cat) {
+          cityList.forEach(function (city) {
             chunks.push({ country: country, city: city, category: cat });
           });
         });
-      });
-      // Jakarta first (largest market)
-      chunks.sort(function (a, b) {
-        var aJak = a.city === 'Jakarta' ? 0 : 1;
-        var bJak = b.city === 'Jakarta' ? 0 : 1;
-        return aJak - bJak;
       });
       return chunks;
     }
@@ -3602,11 +3916,18 @@
         if (progressEl) progressEl.textContent = '';
         runBtn.disabled = true;
         var stopBtn = document.getElementById('scraper-stop-btn');
-        if (stopBtn) stopBtn.style.display = 'inline-block';
+        if (stopBtn) stopBtn.style.display = 'block';
 
-        await loadScraperConfig();
+        // Use the on-screen config (already auto-saved) — do NOT reload, which would discard edits.
         var maxRun = parseInt((scraperConfigCache && scraperConfigCache.max_leads_per_run) || '15', 10);
         var chunks = scraperConfigCache ? buildScraperChunks(scraperConfigCache) : [];
+        if (!chunks.length) {
+          logToProgress('Nothing to search. Add at least one country, city, and category first.');
+          scraperRunning = false;
+          runBtn.disabled = false;
+          if (stopBtn) stopBtn.style.display = 'none';
+          return;
+        }
         var total = 0;
 
         for (var i = 0; i < chunks.length; i++) {
@@ -3661,9 +3982,19 @@
         scrapedLeadsCache = data.leads || [];
         populateScraperFilters(scrapedLeadsCache);
         renderScrapedLeads(applyScraperFilters(scrapedLeadsCache));
+        updateScraperStats(scrapedLeadsCache);
       } catch (err) {
         console.error('loadScrapedLeads error:', err);
       }
+    }
+
+    function updateScraperStats(leads) {
+      var total = leads.length;
+      var newCount = leads.filter(function (l) { return l.status === 'New'; }).length;
+      var interested = leads.filter(function (l) { return l.status === 'Interested'; }).length;
+      var t = document.getElementById('scraper-stat-total'); if (t) t.textContent = total;
+      var n = document.getElementById('scraper-stat-new'); if (n) n.textContent = newCount;
+      var i = document.getElementById('scraper-stat-interested'); if (i) i.textContent = interested;
     }
 
     var SCRAPED_STATUS_OPTIONS = ['New', 'Called – No Answer', 'Called – Spoke', 'Interested', 'Not Interested'];

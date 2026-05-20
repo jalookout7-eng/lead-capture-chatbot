@@ -97,7 +97,7 @@ router.post('/scraper/run-chunk', requireAuth, async (req, res) => {
         continue;
       }
 
-      if (preferMobile && !isMobileNumber(details.phone)) {
+      if (preferMobile && !isMobileNumber(details.phone, country)) {
         skipped++;
         continue;
       }
