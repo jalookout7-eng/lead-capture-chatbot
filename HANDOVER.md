@@ -1,7 +1,9 @@
 # Handover — 3D Visual Pro Lead Capture & Chatbot System
 
+> **Status (21 May 2026):** Live on Vercel. Chatbot "Aria" + Mission Control admin. Versions v1 → v2.2 (foundation) and the four-part **Mission Control Expansion** (Sub-projects A, B, C, D) are all shipped and migrated to production. 188 tests passing. Latest UI work: scraper redesign (PR #10), mobile leads fix (PR #9), nav reorder (PR #8). See "Mission Control Expansion" section for the current feature set.
+
 ## What This Is
-3D Visual Pro's production lead capture and management system. Visitors to the landing page chat with an AI assistant that discovers their business needs through one-question-at-a-time conversation, captures their details (name, email, mobile with country code), qualifies them via AI (hot/warm/cold scoring), and generates personalised follow-up messages. The team manages leads via a PWA admin dashboard.
+3D Visual Pro's production lead capture and management system. Visitors to the landing page chat with **Aria**, an AI assistant that discovers their business needs through one-question-at-a-time conversation, captures their details (name, email, mobile with country code), qualifies them via AI (hot/warm/cold scoring), and generates personalised follow-up messages. The team manages leads via **Mission Control** — a PWA admin dashboard with pipeline tracking, notes, notifications, a Google Maps lead scraper, and a versioned "intelligence" layer that lets Aria improve from lead outcomes.
 
 This is NOT a demo or portfolio piece — it is 3D Visual Pro's actual lead management tool, deployed and live.
 
@@ -36,15 +38,23 @@ This is NOT a demo or portfolio piece — it is 3D Visual Pro's actual lead mana
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
-| Server | Node.js + Express | Single server serves API + static files |
-| Database | Turso (hosted SQLite) | `@libsql/client`, privacy-aligned, hosted |
+| Server | Node.js + Express 5 | Single server serves API + static files |
+| Database | Turso (hosted SQLite) | `@libsql/client`, privacy-aligned, hosted. URL: `libsql://3d-visual-pro-3dvisualpro.aws-ap-northeast-1.turso.io` |
 | AI | Groq + Llama 3.1 8B Instant | Free tier, ~0.5s responses, swappable via `AI_PROVIDER` env var |
-| Frontend | HTML + Tailwind CSS (CDN) | No build step, no framework, static files |
+| Frontend | Vanilla HTML/CSS/JS | Admin is a single `public/admin/index.html`. Chart.js + SheetJS via CDN. No build step. |
+| Email | Resend (`resend` SDK) | Team alert + lead confirmation on capture (Sub-project B) |
+| Web Push | `web-push` (VAPID) | PWA push to phones; keys auto-generated on first boot (Sub-project B) |
+| Scraper | `@googlemaps/google-maps-services-js` | Google Places Text Search + Place Details (Sub-project C) |
 | Auth | Bearer token | `crypto.timingSafeEqual`, fail-closed when `ADMIN_TOKEN` unset |
-| Hosting | Render (web service) | Always-on, no dependency on team's PCs |
-| Source | GitHub (private repo) | Team accesses from multiple PCs and agents |
+| Hosting | **Vercel** (auto-deploy on merge to `main`) | Live at `lead-capture-chatbot-beta.vercel.app`. **Render is legacy — ignore `*.onrender.com`.** |
+| Source | GitHub (private repo) | `jalookout7-eng/lead-capture-chatbot` |
+| Testing | Jest + supertest | `npm test` — 188 passing across 15 suites |
 
 **AI provider abstraction:** `src/services/ai.js` exposes `ai.complete(messages) => Promise<string>`. Swap provider by changing `AI_PROVIDER` env var. Currently only Groq adapter implemented, but the interface supports any provider.
+
+**Migrations:** No framework — each schema change is a standalone idempotent script in `scripts/migrate-vN.js`, run manually against Turso before merging the dependent code (`TURSO_URL=... TURSO_TOKEN=... node scripts/migrate-vN.js`). Applied to production so far: v2, v4, v5, v6, v7. (v1/v3 numbers were skipped/superseded.)
+
+**Deploy flow:** Merge a PR to `main` → Vercel auto-builds and deploys. The service worker (`public/sw.js`) cache key (`lead-admin-vN`) is bumped on every admin-HTML change so clients fetch the new shell instead of a stale cache. Currently at `lead-admin-v9`.
 
 ---
 
@@ -272,8 +282,50 @@ Previously showed only BTC and ETH (NVIDIA was supposed to show but failed silen
 
 ---
 
+## v3 — Mission Control Expansion (COMPLETE, shipped May 2026)
+
+Four independent sub-projects, each with its own DB migration, routes, and admin UI surface, so they could ship one at a time. Specs live in the landing-page repo (`3D Visual Pro/docs/superpowers/specs/`), plans in `.../plans/`. All four are merged to `main`, migrated on Turso, and live. The chatbot's system prompt is now sourced from `src/services/aria-core-prompt.md` (the assistant is named **Aria**).
+
+**Migration map:** A → `migrate-v2`, B → `migrate-v4`, polish → `migrate-v5`, C → `migrate-v6`, D → `migrate-v7`.
+
+### Sub-project A — MC Core Enhancements (PR #1)
+- **Timestamped notes log** (`lead_notes` table) replaces the single notes field.
+- **Configurable pipeline statuses** (`pipeline_status_options` table + `leads.pipeline_status` column) with an enable/disable toggle (`migrate-v5` added the `enabled` flag). Default statuses: Contacted, Dropped, Email Sent, WhatsApp Sent, Meeting Done, Negotiating, Closed, Lost.
+- **Settings tab**, date-filtered Overview (7D/30D/Custom), and a Chart.js pipeline-breakdown bar chart.
+- Files: `src/routes/notes.js`, `src/routes/settings.js`, extended `src/routes/leads.js`.
+
+### Sub-project B — Notifications & Email (PR #3 + polish PR #4)
+- **In-app:** unread badge + toast + WebAudio chime on new leads (30s polling via `GET /api/leads/new-since`).
+- **Web Push (PWA):** out-of-app phone notifications via `public/sw.js` push handlers; VAPID keys auto-generated on boot (`src/services/vapid.js`). Subscriptions in `push_subscriptions` table.
+- **Email (Resend):** team alert + lead confirmation on each capture (`src/services/notifications.js`). `Promise.allSettled` isolates the three channels so one failing doesn't block the others. From-address + a separate `notification_recipient` are configurable in Settings.
+- Config stored in the `scraper_config` key/value table (shared store created here, reused by C and D). Services: `src/services/config-store.js`.
+- **Polish PR #4:** pipeline toggle (not delete), collapsible settings cards, mobile leads grid, `DELETE /api/leads/:id`, Gmail-recipient field.
+- **Pending user action:** verify `3dvisualpro.com` DNS in Resend (SPF/DKIM/DMARC) to send from `john.alexander@3dvisualpro.com`. Domain/email is hosted at **Rumahweb**. Until then, test mode uses `onboarding@resend.dev` → a recipient inbox.
+
+### Sub-project C — Scraper Integration (PR #5, + redesign PR #10)
+- **Google Maps scraper** (Node port of the Python `scrape.py`) using `@googlemaps/google-maps-services-js`. `scraped_leads` table + `leads.website` column (`migrate-v6`). Six config keys in `scraper_config`.
+- **Chunked execution:** the browser loops (category × city) and POSTs each chunk to `POST /api/scraper/run-chunk` (one search per call, ~3–6s, within Vercel's timeout). Dedup by `place_id`. Transfer a scraped row into the main `leads` table via a modal.
+- **Scraper tab** (exec-dashboard layout from PR #10): stat cards, two-column Config+Targeting / Run+live-log, full-width results table.
+- **Country/city selection (PR #10):** region-grouped country dropdown (~90 countries) with curated per-country city suggestions; adding a country seeds 3 starter cities. All targeting changes **auto-save**.
+- **Key fixes in PR #10:** (a) Run used to reload config from the DB, discarding unsaved edits and reverting to the seeded Indonesia set — now it uses the on-screen auto-saved config; (b) the `prefer_mobile` filter used an Indonesia-only phone regex that silently dropped every non-Indonesian number — now the strict filter applies only to Indonesia, other countries keep all numbers. Routes: `src/routes/scraper.js`, service: `src/services/scraper.js`.
+
+### Sub-project D — Layer 3 Intelligence (PR #7)
+- **Versioned intelligence:** Aria's persona is locked in `src/services/aria-core-prompt.md` (only code commits change it); dynamic `lessons_learned` + `scoring_rules` come from the active row in `intelligence_versions`. Chat + qualifier read the active version (60s in-memory cache, `src/services/intelligence.js`). `migrate-v7` seeds v1 active with a SHA-256 `core_hash` so prompt drift is detectable.
+- **Lifecycle:** `pending → active → archived/rejected` with a partial unique index enforcing one active version. Publish/reject/rollback via `src/routes/intelligence.js` (11 routes). `lead_tags` table (exemplary/problematic) + `leads.signals_observed` JSON column feed the analytics.
+- **Intelligence tab** (5 sub-tabs): Current / Pending / History / Tags / Analytics (Chart.js, with Previous/Quarter/Year comparison deltas).
+- **Monthly workspace (Layer 2):** `C:\Users\ADMIN\Documents\JA\JALAI-Workspaces\clients\3d-visual-pro\intelligence\` mirrors the JALAI `_template/intelligence/` pattern (CLAUDE.md, CONTEXT.md, 3 stages, 10-stage monthly-analysis prompt, intelligence-asset.md). Bridge scripts `pull-from-mc.js` (caches analytics/leads/tags/active version) and `push-to-mc.js` (POSTs a candidate → arrives as `pending`). **Note:** JALAI-Workspaces is not a git repo — those files live on disk only.
+
+### Follow-up UI PRs
+- **PR #8:** Intelligence nav button moved under Overview. Order: Overview · Intelligence · Leads · Follow-ups · Export · Scraper · Settings.
+- **PR #9:** mobile Leads table scrolls horizontally (all 7 columns retained) instead of the previous broken hide-columns layout.
+
+**MC nav order (desktop sidebar + mobile bottom-bar):** Overview · Intelligence · Leads · Follow-ups · Export · Scraper · Settings.
+
+---
+
 ## Known Issues / Bugs
-- None currently tracked.
+- **Resend not yet sending from the real domain.** `3dvisualpro.com` DNS (at Rumahweb) needs SPF/DKIM/DMARC records added + verified in Resend before team/confirmation emails can send from `john.alexander@3dvisualpro.com`. Until then use test mode (`onboarding@resend.dev`).
+- **`meeting_done` funnel stage** in the intelligence analytics has no backing DB signal yet, so it always reports 0.
 
 ---
 
@@ -292,6 +344,18 @@ Previously showed only BTC and ETH (NVIDIA was supposed to show but failed silen
 | `src/routes/leads.js` | Full leads CRUD + stats + CSV export + manual entry + bulk import |
 | `src/routes/followup.js` | Follow-up regenerate + edit/mark-sent |
 | `src/routes/market.js` | GET /api/market — server-side proxy for crypto, stocks, commodities (1hr cache) |
+| `src/routes/notes.js` | Timestamped lead notes log (Sub-A) |
+| `src/routes/settings.js` | Pipeline statuses + notification settings (Sub-A/B) |
+| `src/routes/notifications.js` | Web Push subscribe/unsubscribe + VAPID public key (Sub-B) |
+| `src/routes/scraper.js` | 6 routes under `/api/scraper/*` — config, run-chunk, leads list/status, transfer (Sub-C) |
+| `src/routes/intelligence.js` | 11 routes — lead tags + intelligence versions + analytics (Sub-D) |
+| `src/services/config-store.js` | Key/value read/write over the `scraper_config` table (shared by B/C/D) |
+| `src/services/vapid.js` | Generates + persists VAPID keys on first boot (Sub-B) |
+| `src/services/notifications.js` | Orchestrates web push + team email + lead confirmation (Sub-B) |
+| `src/services/scraper.js` | Google Places wrappers: searchBusinesses, getPlaceDetails, isMobileNumber (Sub-C) |
+| `src/services/intelligence.js` | Active-version cache + prompt/qualifier builders (Sub-D) |
+| `src/services/aria-core-prompt.md` | Locked Aria persona/flow — only code commits change it (Sub-D) |
+| `scripts/migrate-v2..v7.js` | Standalone idempotent Turso migrations (run manually before merge) |
 
 ### Frontend
 | File | Purpose |
@@ -315,6 +379,8 @@ Previously showed only BTC and ETH (NVIDIA was supposed to show but failed silen
 | `docs/superpowers/plans/2026-03-29-v2.2-revisions.md` | v2.2 implementation plan (10 tasks) |
 | `.env.example` | Environment variable template |
 
+> **Mission Control Expansion (A/B/C/D) specs + plans live in the landing-page repo**, not here: `3D Visual Pro/docs/superpowers/specs/` and `.../plans/` (e.g. `2026-05-06-mc-scraper-integration-design.md`, `2026-05-12-mc-scraper-integration.md`, `2026-05-10-mc-intelligence-layer-design.md`, `2026-05-12-mc-intelligence-layer.md`). The cross-project handover is `3D Visual Pro/Handover.md` (covers the WordPress landing page too).
+
 ### Tests
 | File | Covers |
 |------|--------|
@@ -327,39 +393,40 @@ Previously showed only BTC and ETH (NVIDIA was supposed to show but failed silen
 ---
 
 ## Live URLs
-- **Landing page:** https://lead-capture-chatbot.onrender.com
-- **Admin dashboard:** https://lead-capture-chatbot.onrender.com/admin/
-- **Widget demo:** https://lead-capture-chatbot.onrender.com/widget.html
+- **Landing page / API:** https://lead-capture-chatbot-beta.vercel.app
+- **Mission Control admin:** https://lead-capture-chatbot-beta.vercel.app/admin/
+- **Widget demo:** https://lead-capture-chatbot-beta.vercel.app/widget.html
 - **GitHub:** https://github.com/jalookout7-eng/lead-capture-chatbot
+- **Legacy (ignore):** https://lead-capture-chatbot.onrender.com (old Render deploy)
 
 ## Environment Variables
-See `.env.example`. All must be set on Render:
+See `.env.example`. All must be set in the Vercel dashboard (Settings → Environment Variables):
 - `AI_PROVIDER` — `groq`
 - `AI_MODEL` — `llama-3.1-8b-instant`
 - `AI_API_KEY` — Groq API key
-- `TURSO_URL` — Turso database URL
+- `TURSO_URL` — `libsql://3d-visual-pro-3dvisualpro.aws-ap-northeast-1.turso.io`
 - `TURSO_TOKEN` — Turso auth token
 - `ADMIN_TOKEN` — password for admin dashboard access
-- `PORT` — `3000`
+
+Notes: VAPID keys for Web Push are generated on first boot and stored in `scraper_config` (no env var needed). Resend API key + Google Places API key are entered through the MC Settings/Scraper UI (stored in `scraper_config`), not via env vars.
 
 ## Running Locally
 1. Copy `.env.example` to `.env` and fill in values
 2. `npm install`
 3. `npm run dev`
 4. Open http://localhost:3000
+5. To apply a schema change locally/prod: `TURSO_URL=... TURSO_TOKEN=... node scripts/migrate-vN.js`
 
 ## Running Tests
-`npm test` — expects 32 tests passing across 5 suites.
+`npm test` — expects **188 tests passing across 15 suites**.
 
 ---
 
 ## Next Steps
-1. **Smoke test live deployment** — verify all v2.2 changes: concise chatbot, manual leads, Excel upload, save button, quote animation, market ticker at https://lead-capture-chatbot.onrender.com
-2. **Automated email follow-ups** — Two triggers:
-   - **Immediate:** When a lead submits contact info via the capture form, send an email prompting them to book a meeting appointment with a specialist for a consultation.
-   - **Stale lead follow-up:** If no status update on a lead after 2 days, send an automated follow-up email.
-   - **Requires:** Email service integration (e.g., Resend, SendGrid, or SMTP), email templates, a cron job or scheduled task to check for stale leads.
-3. **Add privacy/trust section to landing page** — explain the privacy-first approach as a selling point for prospects
-4. **Embed chatbot on WordPress** — drop widget into Elementor HTML widget on 3dvisualpro.com, set API_BASE, configure CORS
-5. **Visitor analytics** — add page view tracking
-6. **Upgrade AI provider** — swap from Groq/Llama to Claude or GPT-4 for better conversation quality
+1. **Finish Resend email setup** — add SPF/DKIM/DMARC for `3dvisualpro.com` at Rumahweb, verify the domain in Resend, then set From = `john.alexander@3dvisualpro.com` and clear the test recipient. (Receiving inbox `john.alexander@3dvisualpro.com` already exists on Rumahweb webmail.) Smoke-test team alert + lead confirmation.
+2. **Scraper smoke test** — open Scraper tab, set Google Places API key, add a country (e.g. United Arab Emirates), confirm cities/districts (Dubai, DIFC, Downtown Dubai), set categories, Run → confirm leads appear and Transfer works.
+3. **Intelligence smoke test** — capture a fresh lead via Aria, confirm `signals_observed` populates; push a candidate version from the JALAI workspace via `push-to-mc.js`; Publish and confirm Aria picks up new lessons within 60s.
+4. **First monthly intelligence cycle** — run `pull-from-mc.js`, work the 10-stage monthly-analysis prompt, produce a candidate, review + publish.
+5. **Stale-lead automated follow-up** — the only original email trigger not yet built: if no status change after 2 days, send a follow-up (needs a scheduled task / Vercel cron).
+6. **Embed chatbot on WordPress** — drop the widget into an Elementor HTML widget on 3dvisualpro.com, set API base to the Vercel URL, configure CORS.
+7. **Team photos** (landing page) — swap the 3 staging URLs to production once uploaded.
